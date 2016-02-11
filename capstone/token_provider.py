@@ -37,13 +37,14 @@ class RaxTokenDataHelper(object):
         # TODO(dstanek): always a project scoped token?
         token_data['project'] = self.rax_token_data['access']['token']['tenant']
         project_id = token_data['project']['id']
-        token_data['project']['domain'] = {'id': project_id, 'name': project_id}
+        token_data['project']['domain'] = {'id': project_id,
+                                           'name': project_id}
 
     def _populate_user(self, token_data, user_id, trust):
         token_data['user'] = {
             'id': self.rax_token_data['access']['user']['id'],
             'name': self.rax_token_data['access']['user']['name'],
-            'domain': self.rax_token_data['access']['token']['tenant'],  # XXX: what?
+            'domain': self.rax_token_data['access']['token']['tenant'],
         }
 
     def _populate_roles(self, token_data, user_id, domain_id, project_id,
@@ -60,7 +61,8 @@ class RaxTokenDataHelper(object):
             return
 
         # TODO(dstanek): probably reformat to look like a Keystone catalog
-        catalog = self._reformat_catalog(self.rax_token_data['access']['serviceCatalog'])
+        catalog = self.rax_token_data['access']['serviceCatalog']
+        catalog = self._reformat_catalog(catalog)
         token_data['catalog'] = catalog
 
     def _populate_token_dates(self, token_data, expires=None, trust=None,
@@ -117,8 +119,10 @@ class RaxTokenDataHelper(object):
                        trust=None, token=None, include_catalog=True,
                        bind=None, access_token=None, issued_at=None,
                        audit_info=None):
-        token_data = {'methods': method_names, 'rax:token_response': self.rax_token_data}
-        token_data['is_domain'] = False  # Rax doesn't have projects that act as domains
+        token_data = {'methods': method_names,
+                      'rax:token_response': self.rax_token_data}
+        token_data['is_domain'] = False  # Rax doesn't have projects that
+                                         # act as domains
 
         self._populate_scope(token_data, domain_id, project_id)
         self._populate_user(token_data, user_id, trust)
@@ -140,7 +144,8 @@ class Provider(common.BaseProvider):
         self.v3_token_data_helper = None
 
     def _get_token_id(self, token_data):
-        return self.v3_token_data_helper.rax_token_data['access']['token']['id'].encode('utf-8')
+        rax_token_data = self.v3_token_data_helper.rax_token_data
+        return rax_token_data['access']['token']['id'].encode('utf-8')
 
     @property
     def _supports_bind_authentication(self):
