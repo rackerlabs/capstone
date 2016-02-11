@@ -16,6 +16,8 @@ from keystone import auth
 import requests
 from six.moves import configparser
 
+from capstone import const
+
 
 METHOD_NAME = 'password'
 
@@ -41,15 +43,16 @@ class Password(auth.AuthMethodHandler):
                 "tenantId": self._admin_project_id,
             },
         }
-        resp = requests.post(token_url, headers=headers, json=data)
+        resp = requests.post(const.TOKEN_URL, headers=const.HEADERS, json=data)
         resp.raise_for_status()
         admin_token = resp.json()['access']['token']['id']
 
         user_url = (
-            'https://identity.api.rackspacecloud.com/v2.0/users/%s' %
-            auth_payload['user']['id']
+            'https://identity.api.rackspacecloud.com/v2.0/users/%s' % user_id
         )
-        resp = requests.get(user_url, headers={'X-Auth-Token': admin_token})
+        headers = const.HEADERS.copy()
+        headers['X-Auth-Token'] = admin_token
+        resp = requests.get(user_url, headers=headers)
         resp.raise_for_status()
         return resp.json()['user']['username']
 
@@ -59,9 +62,6 @@ class Password(auth.AuthMethodHandler):
         domain_or_project = auth_payload['user'].get('domain', {}).get('id')
         if not domain_or_project:
             domain_or_project = auth_payload['user'].get('project', {}).get('id')
-
-        token_url = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
-        headers = {'Content-Type': 'application/json'}
 
         username = auth_payload['user'].get('name')
         if 'id' in auth_payload['user'] and not username:
@@ -76,7 +76,7 @@ class Password(auth.AuthMethodHandler):
                 "tenantId": domain_or_project,
             },
         }
-        resp = requests.post(token_url, headers=headers, json=data)
+        resp = requests.post(const.TOKEN_URL, headers=const.HEADERS, json=data)
         resp.raise_for_status()
 
         json_data = resp.json()
