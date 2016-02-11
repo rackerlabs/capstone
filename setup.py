@@ -32,7 +32,7 @@ setup(
     name='capstone',
     version='0.1',
     description='Keysone Drivers & Plugins for Rackspace',
-    long_description=slurp('../README.rst'),
+    long_description=slurp('README.rst'),
     author='The Rackspace Identity Team',
     url='https://github.com/rackerlabs/capstone',
     classifiers=[
