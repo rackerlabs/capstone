@@ -18,8 +18,11 @@ from keystone import exception
 from keystone.i18n import _
 from keystone.token import provider
 from keystone.token.providers import common
+from oslo_log import log
 import six
 
+
+LOG = log.getLogger(__name__)
 
 controllers.Auth._check_and_set_default_scoping = lambda *a, **k: None
 controllers.AuthInfo._validate_and_normalize_scope_data = lambda *a, **k: None
