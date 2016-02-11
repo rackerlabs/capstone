@@ -99,7 +99,6 @@ class RaxTokenDataHelper(object):
 
         catalog = []
         for rax_service in rax_catalog:
-            print rax_service
             service = {
                 'id': rax_service['name'] + '-' + rax_service['type'],
                 'name': rax_service['name'],
