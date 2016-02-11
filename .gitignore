@@ -1,0 +1,6 @@
+.testrepository
+.tox
+*egg-info
+build
+doc/build
+cover
