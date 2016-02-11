@@ -1,8 +1,8 @@
 Capstone
 ========
 
-Plugins for `OpenStack Keystone <https://github.com/openstack/keystone>`_ in
-the Rackspace Public Cloud.
+Entry points for `OpenStack Keystone <https://github.com/openstack/keystone>`_
+in the Rackspace Public Cloud.
 
 High-level architecture
 -----------------------
