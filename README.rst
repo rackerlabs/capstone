@@ -1,6 +1,8 @@
 Capstone
 ========
 
+.. image:: https://app.wercker.com/project/bykey/409d943a74ce1d67a566d80ecbacd5fd
+
 Entry points for `OpenStack Keystone <https://github.com/openstack/keystone>`_
 in the Rackspace Public Cloud.
 
