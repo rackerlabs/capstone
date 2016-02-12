@@ -1,6 +1,8 @@
 box: python
 build:
     steps:
+        - pip-install:
+            packages_list: "tox"
         - script:
             name: run tox
             code: |
