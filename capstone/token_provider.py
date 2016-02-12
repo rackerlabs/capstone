@@ -10,7 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""Rax Compatibility Token Provider"""
+"""Rax Compatibility Token Provider."""
 
 from keystone.auth import controllers
 from keystone.common import utils
@@ -35,15 +35,20 @@ class RaxTokenDataHelper(object):
 
     def _populate_scope(self, token_data, domain_id, project_id):
         # TODO(dstanek): always a project scoped token?
-        token_data['project'] = self.rax_token_data['access']['token']['tenant']
+        token_data['project'] = (
+            self.rax_token_data['access']['token']['tenant'])
         project_id = token_data['project']['id']
-        token_data['project']['domain'] = {'id': project_id, 'name': project_id}
+        token_data['project']['domain'] = {
+            'id': project_id,
+            'name': project_id,
+        }
 
     def _populate_user(self, token_data, user_id, trust):
         token_data['user'] = {
             'id': self.rax_token_data['access']['user']['id'],
             'name': self.rax_token_data['access']['user']['name'],
-            'domain': self.rax_token_data['access']['token']['tenant'],  # XXX: what?
+            # Is this correct?
+            'domain': self.rax_token_data['access']['token']['tenant'],
         }
 
     def _populate_roles(self, token_data, user_id, domain_id, project_id,
@@ -60,7 +65,8 @@ class RaxTokenDataHelper(object):
             return
 
         # TODO(dstanek): probably reformat to look like a Keystone catalog
-        catalog = self._reformat_catalog(self.rax_token_data['access']['serviceCatalog'])
+        catalog = self._reformat_catalog(
+            self.rax_token_data['access']['serviceCatalog'])
         token_data['catalog'] = catalog
 
     def _populate_token_dates(self, token_data, expires=None, trust=None,
@@ -70,8 +76,7 @@ class RaxTokenDataHelper(object):
         if not isinstance(expires, six.string_types):
             expires = utils.isotime(expires, subsecond=True)
         token_data['expires_at'] = expires
-        token_data['issued_at'] = (issued_at or
-                                   utils.isotime(subsecond=True))
+        token_data['issued_at'] = (issued_at or utils.isotime(subsecond=True))
 
     def _populate_audit_info(self, token_data, audit_info=None):
         if audit_info is None or isinstance(audit_info, six.string_types):
@@ -117,8 +122,13 @@ class RaxTokenDataHelper(object):
                        trust=None, token=None, include_catalog=True,
                        bind=None, access_token=None, issued_at=None,
                        audit_info=None):
-        token_data = {'methods': method_names, 'rax:token_response': self.rax_token_data}
-        token_data['is_domain'] = False  # Rax doesn't have projects that act as domains
+        token_data = {
+            'methods': method_names,
+            'rax:token_response': self.rax_token_data,
+        }
+
+        # Rax doesn't have projects that act as domains
+        token_data['is_domain'] = False
 
         self._populate_scope(token_data, domain_id, project_id)
         self._populate_user(token_data, user_id, trust)
@@ -140,11 +150,12 @@ class Provider(common.BaseProvider):
         self.v3_token_data_helper = None
 
     def _get_token_id(self, token_data):
-        return self.v3_token_data_helper.rax_token_data['access']['token']['id'].encode('utf-8')
+        raw_token = self.v3_token_data_helper.rax_token_data
+        return raw_token['access']['token']['id'].encode('utf-8')
 
     @property
     def _supports_bind_authentication(self):
-        """This token provider does not support token binding."""
+        """Token bind is not supported by this token provider."""
         return False
 
     def needs_persistence(self):
@@ -155,14 +166,21 @@ class Provider(common.BaseProvider):
                        project_id=None, domain_id=None, auth_context=None,
                        trust=None, metadata_ref=None, include_catalog=True,
                        parent_audit_id=None):
-        expires_at = auth_context['rax:token_response']['access']['token']['expires']
+        expires_at = (
+            auth_context['rax:token_response']['access']['token']['expires'])
         self.v3_token_data_helper = RaxTokenDataHelper(
             auth_context['rax:token_response'])
         try:
-            return super(Provider, self).issue_v3_token(user_id, method_names,
-                expires_at=expires_at, project_id=project_id,
-                domain_id=domain_id, auth_context=auth_context, trust=trust,
-                metadata_ref=metadata_ref, include_catalog=include_catalog,
+            return super(Provider, self).issue_v3_token(
+                user_id,
+                method_names,
+                expires_at=expires_at,
+                project_id=project_id,
+                domain_id=domain_id,
+                auth_context=auth_context,
+                trust=trust,
+                metadata_ref=metadata_ref,
+                include_catalog=include_catalog,
                 parent_audit_id=parent_audit_id)
         finally:
             self.v3_token_data_helper = None

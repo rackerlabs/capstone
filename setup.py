@@ -12,8 +12,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from setuptools import setup
 import os
+
+import setuptools
 
 
 HERE = os.path.dirname(__file__)
@@ -28,7 +29,7 @@ def read_requirements(filename):
     return filter(None, (l.strip() for l in slurp(filename).splitlines()))
 
 
-setup(
+setuptools.setup(
     name='capstone',
     version='0.1',
     description='Keysone Drivers & Plugins for Rackspace',
