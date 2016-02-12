@@ -47,9 +47,7 @@ class Password(auth.AuthMethodHandler):
         resp.raise_for_status()
         admin_token = resp.json()['access']['token']['id']
 
-        user_url = (
-            'https://identity.api.rackspacecloud.com/v2.0/users/%s' % user_id
-        )
+        user_url = const.USER_URL + user_id
         headers = const.HEADERS.copy()
         headers['X-Auth-Token'] = admin_token
         resp = requests.get(user_url, headers=headers)

@@ -9,6 +9,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-
-TOKEN_URL = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
+BASE_URL = 'https://identity.api.rackspacecloud.com/v2.0'
+TOKEN_URL = BASE_URL + '/tokens/'
+USER_URL = BASE_URL + '/users/'
 HEADERS = {'Content-Type': 'application/json'}
