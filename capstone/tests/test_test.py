@@ -20,4 +20,5 @@ class TestTest(testtools.TestCase):
     """
 
     def test(self):
-        """Always pass, because that's what good tests do."""
+        """Just pass, because that's what good tests do."""
+        pass
