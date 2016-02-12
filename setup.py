@@ -12,8 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from setuptools import setup
 import os
+from setuptools import setup
 
 
 HERE = os.path.dirname(__file__)

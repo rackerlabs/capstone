@@ -56,10 +56,9 @@ class Password(auth.AuthMethodHandler):
 
     def authenticate(self, context, auth_payload, auth_context):
         """Try to authenticate against the identity backend."""
-
-        domain_or_project = auth_payload['user'].get('domain', {}).get('id')
-        if not domain_or_project:
-            domain_or_project = auth_payload['user'].get('project', {}).get('id')
+        domain_id = auth_payload['user'].get('domain', {}).get('id')
+        project_id = auth_payload['user'].get('project', {}).get('id')
+        domain_or_project = domain_id or project_id
 
         username = auth_payload['user'].get('name')
         if 'id' in auth_payload['user'] and not username:
