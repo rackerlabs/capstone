@@ -31,7 +31,7 @@ the existing v2 identity system:
    Java v2->Keystone v3: v2 auth response
    Keystone v3->User: v3 auth response
 
-Design Priorities
+Design priorities
 -----------------
 
 1. **Reliability, durability, and uptime.**
