@@ -1,6 +1,8 @@
 Capstone
 ========
 
+Test commit: do not merge.
+
 .. image:: https://app.wercker.com/status/409d943a74ce1d67a566d80ecbacd5fd/m
    :target: https://app.wercker.com/#applications/56bd3ba8239090c836084417
 
