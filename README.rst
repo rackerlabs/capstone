@@ -72,6 +72,29 @@ Use cases
    token must work with existing OpenStack services, which currently use v2 for
    token validation.
 
+   The following authentication claims are supported by the v3 API's `password`
+   method:
+
+   - `password` + `user_id`
+
+   - `password` + `user_name` + `user_domain_id`
+
+   - `password` + `user_name` + `user_domain_name`
+
+   The following authorization scopes are supported by the v3 API:
+
+   - Unscoped, or automatically scoped to a preferred project
+
+   - Project-scoped: `project_id`
+
+   - Project-scoped: `project_name` + `project_domain_id`
+
+   - Project-scoped: `project_name` + `project_domain_name`
+
+   - Domain-scoped: `domain_id`
+
+   - Domain-scoped: `domain_name`
+
 2. **Validate a token.** Rackspace public cloud should use v3 internally, and
    the first step is to allow them to validate user tokens against Keystone.
 
