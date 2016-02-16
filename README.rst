@@ -81,3 +81,47 @@ Use cases
 
 4. **Delegation.** Users should be able to use v3 to delegate authorization to
    each other (trusts or otherwise).
+
+Contributing
+------------
+
+Useful links:
+
+- `Code reviews
+  <https://review.gerrithub.io/#/q/project:rackerlabs/capston://review.gerrithub.io/#/q/status:open+(project:rackerlabs/capstone+OR+project:rackerlabs/capstone-deploy)>`_
+
+- `Issue tracker
+  <https://github.com/rackerlabs/capstone/issues>`_
+
+The developer workflow mirrors that of OpenStack:
+
+- Clone the repository: ``git clone git@github.com:rackerlabs/capstone.git &&
+  cd capstone/``
+
+- Setup git-review: ``pip install --upgrade git-review && git review -s``
+
+- Create a branch to work from, or go untracked: ``git checkout HEAD~0``
+
+- Create a commit: ``git commit``.
+
+  A Change-Id will be appended to your commit message to uniquely identify your
+  code review.
+
+- Upload it for review: ``git review``.
+
+  You'll get a link to your code review on ``gerrithub.io``. A bot will then
+  pull your change, run ``wercker build`` on it to test it, and upload the
+  results back to gerrit, setting the `Verified` field to indicate build
+  success or failure. If you have a Docker server available, you can run
+  ``wercker build`` yourself using the `wercker CLI
+  <https://github.com/wercker/wercker>`_.
+
+- Your patch will be peer reviewed.
+
+  If you need to upload a revision of your patch, fetch the latest patchset
+  from gerrit using: ``git review -d <change-number>``, where your change
+  number is NOT your Change-Id, but instead is 7 digit number in the URL of
+  your code review.
+
+- When your patch receives a +2 and is passing tests, it will be automatically
+  merged.
