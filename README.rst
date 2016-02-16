@@ -72,6 +72,31 @@ Use cases
    token must work with existing OpenStack services, which currently use v2 for
    token validation.
 
+   The following authentication claims are expected to be supported by the v3
+   API:
+
+   - `token`
+
+   - `password` + `user_id`
+
+   - `password` + `user_name` + `user_domain_id`
+
+   - `password` + `user_name` + `user_domain_name`
+
+   The following authorization scopes are supported by the v3 API:
+
+   - Unscoped, or automatically scoped to a preferred project
+
+   - Project-scoped: `project_id`
+
+   - Project-scoped: `project_name` + `project_domain_id`
+
+   - Project-scoped: `project_name` + `project_domain_name`
+
+   - Domain-scoped: `domain_id`
+
+   - Domain-scoped: `domain_name`
+
 2. **Validate a token.** Rackspace public cloud should use v3 internally, and
    the first step is to allow them to validate user tokens against Keystone.
 
@@ -81,3 +106,30 @@ Use cases
 
 4. **Delegation.** Users should be able to use v3 to delegate authorization to
    each other (trusts or otherwise).
+
+v3 ⟷ v2 attribute mapping
+-------------------------
+
++-----------------------+--------------------+
+| v3                    | v2                 |
++=======================+====================+
+| user ID               | user ID            |
++-----------------------+--------------------+
+| user name             | user name          |
++-----------------------+--------------------+
+| user's domain ID      | user's tenant ID   |
++-----------------------+--------------------+
+| user's domain name    | user's tenant name |
++-----------------------+--------------------+
+| project ID            | sub-tenant ID      |
++-----------------------+--------------------+
+| project name          | sub-tenant name    |
++-----------------------+--------------------+
+| project's domain ID   | super-tenant ID    |
++-----------------------+--------------------+
+| project's domain name | super-tenant name  |
++-----------------------+--------------------+
+| domain ID             | tenant ID          |
++-----------------------+--------------------+
+| domain name           | tenant name        |
++-----------------------+--------------------+
