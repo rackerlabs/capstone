@@ -6,3 +6,8 @@ doc/build
 cover
 *.swp
 *.pyc
+
+# wercker
+_builds/
+_projects/
+_steps/
