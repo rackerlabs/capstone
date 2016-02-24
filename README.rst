@@ -134,6 +134,12 @@ v3 ⟷ v2 attribute mapping
 | domain name           | tenant name        |
 +-----------------------+--------------------+
 
+Deployment
+----------
+
+Deployment tooling lives in a separate repository: `rackerlabs/capstone-deploy
+<https://github.com/rackerlabs/capstone-deploy>`_.
+
 Contributing
 ------------
 
