@@ -54,6 +54,5 @@ setuptools.setup(
             'capstone = capstone.token_provider:Provider',
         ],
     },
-    install_requires=read_requirements('requirements.txt'),
-    tests_require=read_requirements('test-requirements.txt')
+    install_requires=read_requirements('requirements.txt')
 )
