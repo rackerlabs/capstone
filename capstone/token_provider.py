@@ -12,6 +12,8 @@
 
 """Rax Compatibility Token Provider."""
 
+import hashlib
+
 from keystone.auth import controllers
 from keystone.common import utils
 from keystone import exception
@@ -90,28 +92,35 @@ class RaxTokenDataHelper(object):
             raise exception.UnexpectedError(msg)
 
     def _reformat_catalog(self, rax_catalog):
-        def _expand_endpoints(rax_endpoint):
-            endpoint_tmpl = {
-                'id': '<unknown>',
-                'region': rax_endpoint.get('region'),
-            }
+        def _expand_endpoints(rax_endpoint, rax_service):
             for interface in ('adminURL', 'internalURL', 'publicURL'):
                 if interface in rax_endpoint:
-                    endpoint = endpoint_tmpl.copy()
-                    endpoint.update({'interface': interface[:-3],
-                                     'url': rax_endpoint[interface]})
+                    url = rax_endpoint[interface]
+                    interface = interface[:-3]
+
+                    id_sha = hashlib.sha1(
+                        rax_service['name'] + rax_service['type'] +
+                        interface + rax_endpoint.get('region', '') + url)
+                    endpoint = {
+                        'id': id_sha.hexdigest(),
+                        'region': rax_endpoint.get('region'),
+                        'interface': interface,
+                        'url': url,
+                    }
                     yield endpoint
 
         catalog = []
         for rax_service in rax_catalog:
+            id_sha = hashlib.sha1(rax_service['name'] + rax_service['type'])
             service = {
-                'id': rax_service['name'] + '-' + rax_service['type'],
+                'id': id_sha.hexdigest(),
                 'name': rax_service['name'],
                 'type': rax_service['type'],
                 'endpoints': [],
             }
             for rax_endpoint in rax_service['endpoints']:
-                service['endpoints'].extend(_expand_endpoints(rax_endpoint))
+                service['endpoints'].extend(
+                    _expand_endpoints(rax_endpoint, rax_service))
 
             catalog.append(service)
 

@@ -12,3 +12,4 @@ mccabe==0.2.1 # MIT License
 pep257==0.7.0 # MIT License
 pep8==1.5.7  # MIT
 pyflakes==0.8.1  # MIT
+git+https://git.openstack.org/openstack/keystone@stable/liberty#egg=Keystone
