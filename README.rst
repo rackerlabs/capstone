@@ -32,38 +32,37 @@ the existing v2 identity system:
    Java v2->Keystone v3: v2 auth response
    Keystone v3->User: v3 auth response
 
-Design priorities
------------------
+Design constraints
+------------------
 
-1. **Reliability, durability, and uptime.**
+1. **Reliability.**
 
-   - v3 should *never* impact the reliability of v2 in any way.
+   - Keystone v3 should *never* impact the reliability of Rackspace v2 in any
+     way.
 
-   - v3 should regress gracefully when v2 has outages, downtime, or
-     inconsistent responses.
+   - Keystone v3 should regress gracefully when Rackspace v2 has outages,
+     downtime, or inconsistent responses.
 
-   - If it's not comprehensively tested, then it's not supported.
+2. **Defcore-compliance.**
 
-2. **Defcore-compliant.**
+   - Keystone v3 must maintain complete Defcore compliance.
 
-   - v3 must maintain complete Defcore compliance.
+3. **Operational independence.**
 
-3. **Ease of deployment & operations.**
-
-   - Deploying v3 should not impact v2 at all, or vice versa.
+   - Deploying Keystone v3 should not impact Rackspace v2 at all, or vice
+     versa. You should be able to deploy new versions of either service
+     independently of the other.
 
    - It should be trivial to vertically & horizontally scale as necessary.
 
-   - We should provide first class metrics & insights at runtime.
-
 4. **Seamless experience.**
 
-   - v2 is the single source of truth for authentication. Only v3-specific
-     authorization may live in Keystone.
+   - Rackspace v2 is the single source of truth for authentication. Only
+     Keystone v3-specific authorization data may live in Keystone.
 
 5. **Performance.**
 
-   - v3 should add minimal response time overhead to v2.
+   - Keystone v3 should add minimal response time overhead to Rackspace v2.
 
 Use cases
 ---------
