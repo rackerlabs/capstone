@@ -75,27 +75,27 @@ Use cases
    The following authentication claims are expected to be supported by the v3
    API:
 
-   - `token`
+   - ``token``
 
-   - `password` + `user_id`
+   - ``password`` + ``user_id``
 
-   - `password` + `user_name` + `user_domain_id`
+   - ``password`` + ``user_name`` + ``user_domain_id``
 
-   - `password` + `user_name` + `user_domain_name`
+   - ``password`` + ``user_name`` + ``user_domain_name``
 
    The following authorization scopes are supported by the v3 API:
 
    - Unscoped, or automatically scoped to a preferred project
 
-   - Project-scoped: `project_id`
+   - Project-scoped: ``project_id``
 
-   - Project-scoped: `project_name` + `project_domain_id`
+   - Project-scoped: ``project_name`` + ``project_domain_id``
 
-   - Project-scoped: `project_name` + `project_domain_name`
+   - Project-scoped: ``project_name`` + ``project_domain_name``
 
-   - Domain-scoped: `domain_id`
+   - Domain-scoped: ``domain_id``
 
-   - Domain-scoped: `domain_name`
+   - Domain-scoped: ``domain_name``
 
 2. **Validate a token.** Rackspace public cloud should use v3 internally, and
    the first step is to allow them to validate user tokens against Keystone.
