@@ -74,27 +74,27 @@ Use cases
    The following authentication claims are expected to be supported by the v3
    API:
 
-   - `token`
+   - ``token``
 
-   - `password` + `user_id`
+   - ``password`` + ``user_id``
 
-   - `password` + `user_name` + `user_domain_id`
+   - ``password`` + ``user_name`` + ``user_domain_id``
 
-   - `password` + `user_name` + `user_domain_name`
+   - ``password`` + ``user_name`` + ``user_domain_name``
 
    The following authorization scopes are supported by the v3 API:
 
    - Unscoped, or automatically scoped to a preferred project
 
-   - Project-scoped: `project_id`
+   - Project-scoped: ``project_id``
 
-   - Project-scoped: `project_name` + `project_domain_id`
+   - Project-scoped: ``project_name`` + ``project_domain_id``
 
-   - Project-scoped: `project_name` + `project_domain_name`
+   - Project-scoped: ``project_name`` + ``project_domain_name``
 
-   - Domain-scoped: `domain_id`
+   - Domain-scoped: ``domain_id``
 
-   - Domain-scoped: `domain_name`
+   - Domain-scoped: ``domain_name``
 
 2. **Validate a token.** Rackspace public cloud should use v3 internally, and
    the first step is to allow them to validate user tokens against Keystone.
@@ -158,20 +158,20 @@ The developer workflow mirrors that of OpenStack:
 - Clone the repository: ``git clone git@github.com:rackerlabs/capstone.git &&
   cd capstone/``
 
-- Setup git-review: ``pip install --upgrade git-review && git review -s``
+- Setup ``git-review``: ``pip install --upgrade git-review && git review -s``
 
 - Create a branch to work from, or go untracked: ``git checkout HEAD~0``
 
 - Create a commit: ``git commit``.
 
-  A Change-Id will be appended to your commit message to uniquely identify your
-  code review.
+  A ``Change-Id`` will be appended to your commit message to uniquely identify
+  your code review.
 
 - Upload it for review: ``git review``.
 
   You'll get a link to your code review on ``gerrithub.io``. A bot will then
   pull your change, run ``wercker build`` on it to test it, and upload the
-  results back to gerrit, setting the `Verified` field to indicate build
+  results back to gerrit, setting the ``Verified`` field to indicate build
   success or failure. If you have a Docker server available, you can run
   ``wercker build`` yourself using the `wercker CLI
   <https://github.com/wercker/wercker>`_.
@@ -180,8 +180,8 @@ The developer workflow mirrors that of OpenStack:
 
   If you need to upload a revision of your patch, fetch the latest patchset
   from gerrit using: ``git review -d <change-number>``, where your change
-  number is NOT your Change-Id, but instead is 7 digit number in the URL of
-  your code review.
+  number is NOT your ``Change-Id``, but instead is a unique number found in the
+  URL of your code review.
 
 - When your patch receives a +2 and is passing tests, it will be automatically
   merged.
