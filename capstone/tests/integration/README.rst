@@ -30,7 +30,7 @@ system . The first is
 
     ---
     clouds:
-        rax:
+        rackspace:
             profile: rackspace
             auth:
                 project_id: <account_id>

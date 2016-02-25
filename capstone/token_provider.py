@@ -10,7 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""Rax Compatibility Token Provider."""
+"""Rackspace Compatibility Token Provider."""
 
 import hashlib
 
@@ -23,6 +23,8 @@ from keystone.token.providers import common
 from oslo_log import log
 import six
 
+from capstone import const
+
 
 LOG = log.getLogger(__name__)
 
@@ -30,15 +32,15 @@ controllers.Auth._check_and_set_default_scoping = lambda *a, **k: None
 controllers.AuthInfo._validate_and_normalize_scope_data = lambda *a, **k: None
 
 
-class RaxTokenDataHelper(object):
+class RackspaceTokenDataHelper(object):
 
-    def __init__(self, rax_token_data):
-        self.rax_token_data = rax_token_data
+    def __init__(self, token_data):
+        self._token_data = token_data
 
     def _populate_scope(self, token_data, domain_id, project_id):
         # TODO(dstanek): always a project scoped token?
         token_data['project'] = (
-            self.rax_token_data['access']['token']['tenant'])
+            self._token_data['access']['token']['tenant'])
         project_id = token_data['project']['id']
         token_data['project']['domain'] = {
             'id': project_id,
@@ -47,16 +49,16 @@ class RaxTokenDataHelper(object):
 
     def _populate_user(self, token_data, user_id, trust):
         token_data['user'] = {
-            'id': self.rax_token_data['access']['user']['id'],
-            'name': self.rax_token_data['access']['user']['name'],
+            'id': self._token_data['access']['user']['id'],
+            'name': self._token_data['access']['user']['name'],
             # Is this correct?
-            'domain': self.rax_token_data['access']['token']['tenant'],
+            'domain': self._token_data['access']['token']['tenant'],
         }
 
     def _populate_roles(self, token_data, user_id, domain_id, project_id,
                         trust, access_token):
         roles = []
-        for role in self.rax_token_data['access']['user']['roles']:
+        for role in self._token_data['access']['user']['roles']:
             roles.append({'id': role['id'], 'name': role['name']})
         token_data['roles'] = roles
 
@@ -68,7 +70,7 @@ class RaxTokenDataHelper(object):
 
         # TODO(dstanek): probably reformat to look like a Keystone catalog
         catalog = self._reformat_catalog(
-            self.rax_token_data['access']['serviceCatalog'])
+            self._token_data['access']['serviceCatalog'])
         token_data['catalog'] = catalog
 
     def _populate_token_dates(self, token_data, expires=None, trust=None,
@@ -91,40 +93,40 @@ class RaxTokenDataHelper(object):
             LOG.error(msg)
             raise exception.UnexpectedError(msg)
 
-    def _reformat_catalog(self, rax_catalog):
-        def _expand_endpoints(rax_endpoint, rax_service):
+    def _reformat_catalog(self, v2_catalog):
+        def _expand_endpoints(v2_endpoint, v2_service):
             for interface in ('adminURL', 'internalURL', 'publicURL'):
-                if interface in rax_endpoint:
-                    url = rax_endpoint[interface]
+                if interface in v2_endpoint:
+                    url = v2_endpoint[interface]
                     interface = interface[:-3]
 
                     id_sha = hashlib.sha1(
-                        rax_service['name'] + rax_service['type'] +
-                        interface + rax_endpoint.get('region', '') + url)
+                        v2_service['name'] + v2_service['type'] +
+                        interface + v2_endpoint.get('region', '') + url)
                     endpoint = {
                         'id': id_sha.hexdigest(),
-                        'region': rax_endpoint.get('region'),
+                        'region': v2_endpoint.get('region'),
                         'interface': interface,
                         'url': url,
                     }
                     yield endpoint
 
-        catalog = []
-        for rax_service in rax_catalog:
-            id_sha = hashlib.sha1(rax_service['name'] + rax_service['type'])
+        v3_catalog = []
+        for v2_service in v2_catalog:
+            id_sha = hashlib.sha1(v2_service['name'] + v2_service['type'])
             service = {
                 'id': id_sha.hexdigest(),
-                'name': rax_service['name'],
-                'type': rax_service['type'],
+                'name': v2_service['name'],
+                'type': v2_service['type'],
                 'endpoints': [],
             }
-            for rax_endpoint in rax_service['endpoints']:
+            for v2_endpoint in v2_service['endpoints']:
                 service['endpoints'].extend(
-                    _expand_endpoints(rax_endpoint, rax_service))
+                    _expand_endpoints(v2_endpoint, v2_service))
 
-            catalog.append(service)
+            v3_catalog.append(service)
 
-        return catalog
+        return v3_catalog
 
     def get_token_data(self, user_id, method_names, extras=None,
                        domain_id=None, project_id=None, expires=None,
@@ -133,10 +135,10 @@ class RaxTokenDataHelper(object):
                        audit_info=None):
         token_data = {
             'methods': method_names,
-            'rax:token_response': self.rax_token_data,
+            const.TOKEN_RESPONSE: self._token_data,
         }
 
-        # Rax doesn't have projects that act as domains
+        # Rackspace doesn't have projects that act as domains
         token_data['is_domain'] = False
 
         self._populate_scope(token_data, domain_id, project_id)
@@ -159,7 +161,7 @@ class Provider(common.BaseProvider):
         self.v3_token_data_helper = None
 
     def _get_token_id(self, token_data):
-        raw_token = self.v3_token_data_helper.rax_token_data
+        raw_token = self.v3_token_data_helper._token_data
         return raw_token['access']['token']['id'].encode('utf-8')
 
     @property
@@ -176,9 +178,9 @@ class Provider(common.BaseProvider):
                        trust=None, metadata_ref=None, include_catalog=True,
                        parent_audit_id=None):
         expires_at = (
-            auth_context['rax:token_response']['access']['token']['expires'])
-        self.v3_token_data_helper = RaxTokenDataHelper(
-            auth_context['rax:token_response'])
+            auth_context[const.TOKEN_RESPONSE]['access']['token']['expires'])
+        self.v3_token_data_helper = RackspaceTokenDataHelper(
+            auth_context[const.TOKEN_RESPONSE])
         try:
             return super(Provider, self).issue_v3_token(
                 user_id,
@@ -196,7 +198,7 @@ class Provider(common.BaseProvider):
 
     def validate_v3_token(self, token_ref):
         raise NotImplemented
-        self.v3_token_data_helper = RaxTokenDataHelper(None)
+        self.v3_token_data_helper = RackspaceTokenDataHelper(None)
         try:
             return super(Provider, self).validate_v3_token(token_ref)
         finally:

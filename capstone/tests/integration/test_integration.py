@@ -25,8 +25,8 @@ class IntegrationTests(testtools.TestCase):
         cloud_cfg = cloud_config.OpenStackConfig()
 
         # Extract authentication information for the Rackspace cloud.
-        rax_cloud = cloud_cfg.get_one_cloud('rax')
-        self.rax_args = rax_cloud.get_auth_args()
+        rackspace_cloud = cloud_cfg.get_one_cloud('rackspace')
+        self.rackspace_args = rackspace_cloud.get_auth_args()
 
         # Extract authentication information for the Keystone cloud.
         keystone_cloud = cloud_cfg.get_one_cloud('keystone')
@@ -35,11 +35,11 @@ class IntegrationTests(testtools.TestCase):
         # Store common request information that is used to build and make
         # authentication request.
         self.headers = {'Content-Type': 'application/json'}
-        self.username = self.rax_args['username']
-        self.password = self.rax_args['password']
-        self.project_id = self.rax_args['project_id']
-        self.rax_token_endpoint = (
-            self.rax_args['auth_url'].rstrip('/') + '/tokens'
+        self.username = self.rackspace_args['username']
+        self.password = self.rackspace_args['password']
+        self.project_id = self.rackspace_args['project_id']
+        self.rackspace_token_endpoint = (
+            self.rackspace_args['auth_url'].rstrip('/') + '/tokens'
         )
         self.keystone_token_endpoint = (
             self.keystone_args['auth_url'].rstrip('/') + '/auth/tokens'
@@ -75,7 +75,7 @@ class IntegrationTests(testtools.TestCase):
             },
         }
         resp = requests.post(
-            self.rax_token_endpoint, headers=self.headers, json=data)
+            self.rackspace_token_endpoint, headers=self.headers, json=data)
         resp.raise_for_status()
         token = resp.json()['access']['token']['id']
         self.assertTokenIsUseable(token)

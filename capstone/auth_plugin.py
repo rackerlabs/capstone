@@ -79,4 +79,4 @@ class Password(auth.AuthMethodHandler):
 
         json_data = resp.json()
         auth_context['user_id'] = json_data['access']['user']['id']
-        auth_context['rax:token_response'] = json_data
+        auth_context[const.TOKEN_RESPONSE] = json_data

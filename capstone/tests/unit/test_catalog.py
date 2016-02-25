@@ -47,7 +47,7 @@ class TestCatalogReformatting(testtools.TestCase):
                 self.assertEqual(expected_id_sha.hexdigest(), endpoint['id'])
 
     def test(self):
-        tdh = token_provider.RaxTokenDataHelper(self.auth_response_body)
+        tdh = token_provider.RackspaceTokenDataHelper(self.auth_response_body)
 
         v3catalog = tdh._reformat_catalog(
             self.auth_response_body['access']['serviceCatalog'])
