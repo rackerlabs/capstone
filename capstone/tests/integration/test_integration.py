@@ -26,23 +26,25 @@ class IntegrationTests(testtools.TestCase):
 
         # Extract authentication information for the Rackspace cloud.
         rackspace_cloud = cloud_cfg.get_one_cloud('rackspace')
-        self.rackspace_args = rackspace_cloud.get_auth_args()
+        rackspace_args = rackspace_cloud.get_auth_args()
 
         # Extract authentication information for the Keystone cloud.
         keystone_cloud = cloud_cfg.get_one_cloud('keystone')
-        self.keystone_args = keystone_cloud.get_auth_args()
+        keystone_args = keystone_cloud.get_auth_args()
 
         # Store common request information that is used to build and make
         # authentication request.
         self.headers = {'Content-Type': 'application/json'}
-        self.username = self.rackspace_args['username']
-        self.password = self.rackspace_args['password']
-        self.project_id = self.rackspace_args['project_id']
+        self.user_id = rackspace_args['user_id']
+        self.username = rackspace_args['username']
+        self.password = rackspace_args['password']
+        self.project_id = rackspace_args['project_id']
+        self.domain_id = rackspace_args['user_domain_id']
         self.rackspace_token_endpoint = (
-            self.rackspace_args['auth_url'].rstrip('/') + '/tokens'
+            rackspace_args['auth_url'].rstrip('/') + '/tokens'
         )
         self.keystone_token_endpoint = (
-            self.keystone_args['auth_url'].rstrip('/') + '/auth/tokens'
+            keystone_args['auth_url'].rstrip('/') + '/auth/tokens'
         )
 
     def assertTokenIsUseable(self, token_id):
@@ -143,6 +145,27 @@ class IntegrationTests(testtools.TestCase):
                 },
                 "scope": {
                     "domain": {"id": self.project_id},
+                },
+            },
+        }
+        resp = requests.post(
+            self.keystone_token_endpoint, headers=self.headers, json=data)
+        resp.raise_for_status()
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+
+    def test_get_v3_default_scoped_token_from_keystone_by_user_id(self):
+        data = {
+            "auth": {
+                "identity": {
+                    "methods": ["password"],
+                    "password": {
+                        "user": {
+                            "id": self.user_id,
+                            "password": self.password,
+                            "domain": {"id": self.domain_id},
+                        },
+                    },
                 },
             },
         }

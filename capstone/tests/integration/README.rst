@@ -33,7 +33,9 @@ system . The first is
         rackspace:
             profile: rackspace
             auth:
+                domain_id: <domain_id>
                 project_id: <account_id>
+                user_id: <user_id>
                 username: <username>
                 password: <password>
             region_name: <region_id>
