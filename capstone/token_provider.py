@@ -152,6 +152,10 @@ class RackspaceTokenDataHelper(object):
                                            project_id, trust)
         self._populate_token_dates(token_data, expires=expires, trust=trust,
                                    issued_at=issued_at)
+
+        # Remove Rackspace's response from token data
+        del token_data['rackspace:token_response']
+
         return {'token': token_data}
 
 
