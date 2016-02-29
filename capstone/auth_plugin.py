@@ -22,10 +22,9 @@ from capstone import const
 METHOD_NAME = 'password'
 
 
-class Password(auth.AuthMethodHandler):
+class RackspaceIdentity(object):
 
-    def __init__(self, *args, **kwargs):
-        super(Password, self).__init__(*args, **kwargs)
+    def __init__(self):
         config = configparser.ConfigParser()
         config.read(['/etc/capstone/capstone.conf',
                      os.environ.get('CAPSTONE_CONFIG', '')])
@@ -33,26 +32,37 @@ class Password(auth.AuthMethodHandler):
         self._admin_password = config.get('service_admin', 'password')
         self._admin_project_id = config.get('service_admin', 'project_id')
 
+    def url_for_user(self, user_id):
+        return const.USER_URL + user_id
+
     def get_user_name(self, user_id):
-        data = {
-            "auth": {
-                "passwordCredentials": {
-                    "username": self._admin_username,
-                    "password": self._admin_password,
-                },
-                "tenantId": self._admin_project_id,
-            },
-        }
-        resp = requests.post(const.TOKEN_URL, headers=const.HEADERS, json=data)
-        resp.raise_for_status()
-        admin_token = resp.json()['access']['token']['id']
+        token_data = self.authenticate(
+            self._admin_username, self._admin_password, self._admin_project_id)
+        admin_token = token_data['access']['token']['id']
 
         user_url = const.USER_URL + user_id
         headers = const.HEADERS.copy()
         headers['X-Auth-Token'] = admin_token
-        resp = requests.get(user_url, headers=headers)
+        resp = requests.get(self.url_for_user(user_id), headers=headers)
         resp.raise_for_status()
         return resp.json()['user']['username']
+
+    def authenticate(self, username, password, domain_or_project):
+        data = {
+            "auth": {
+                "passwordCredentials": {
+                    "username": username,
+                    "password": password,
+                },
+                "tenantId": domain_or_project,
+            },
+        }
+        resp = requests.post(const.TOKEN_URL, headers=const.HEADERS, json=data)
+        resp.raise_for_status()
+        return resp.json()
+
+
+class Password(auth.AuthMethodHandler):
 
     def authenticate(self, context, auth_payload, auth_context):
         """Try to authenticate against the identity backend."""
@@ -61,22 +71,13 @@ class Password(auth.AuthMethodHandler):
         # TODO(dolph): if (domain_id and project_id), raise a 400
         domain_or_project = domain_id or project_id
 
+        identity = RackspaceIdentity()
+
         username = auth_payload['user'].get('name')
         if 'id' in auth_payload['user'] and not username:
-            username = self.get_user_name(auth_payload['user']['id'])
+            username = identity.get_user_name(auth_payload['user']['id'])
 
-        data = {
-            "auth": {
-                "passwordCredentials": {
-                    "username": username,
-                    "password": auth_payload['user']['password'],
-                },
-                "tenantId": domain_or_project,
-            },
-        }
-        resp = requests.post(const.TOKEN_URL, headers=const.HEADERS, json=data)
-        resp.raise_for_status()
+        token_data = identity.authenticate(username, auth_payload['user']['password'], domain_or_project)
 
-        json_data = resp.json()
-        auth_context['user_id'] = json_data['access']['user']['id']
-        auth_context[const.TOKEN_RESPONSE] = json_data
+        auth_context['user_id'] = token_data['access']['user']['id']
+        auth_context[const.TOKEN_RESPONSE] = token_data
