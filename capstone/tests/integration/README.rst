@@ -30,29 +30,28 @@ system . The first is
 
     ---
     clouds:
-        rackspace:
-            profile: rackspace
-            auth:
-                domain_id: <domain_id>
-                project_id: <account_id>
-                user_id: <user_id>
-                username: <username>
-                password: <password>
-            region_name: <region_id>
-
-        keystone:
-            profile: capstone
+      rackspace:
+        profile: rackspace
+          auth:
+            domain_id: <domain_id>
+            project_id: <account_id>
+            user_id: <user_id>
+            username: <username>
+            password: <password>
+          region_name: <region_id>
+      keystone:
+        profile: capstone
 
 The second file is ``~/.config/openstack/clouds-public.yaml``::
 
     ---
     public-clouds:
-        rackspace:
-            auth:
-                auth_url: https://identity.api.rackspacecloud.com/v2.0/
-        capstone:
-            auth:
-                auth_url: http://localhost:5000/v3/
+      rackspace:
+        auth:
+          auth_url: https://identity.api.rackspacecloud.com/v2.0/
+      capstone:
+        auth:
+          auth_url: http://localhost:5000/v3/
 
 The integration test will use ``os-cloud-config`` to parse these files to build
 requests to make against both the Rackspace endpoint and the Keystone endpoint.
