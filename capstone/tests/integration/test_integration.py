@@ -48,18 +48,8 @@ class IntegrationTests(testtools.TestCase):
         )
 
     def assertTokenIsUseable(self, token_id):
-        """Query the Rackspace v2.0 API for the keypairs of the account.
-
-        This method asserts that given a token and a project ID, we can
-        retrieve a list of keypairs associated to the project.
-
-        :param token_id: ID of the token to pass in the request
-
-        """
-        url = (
-            'https://iad.servers.api.rackspacecloud.com/v2/%s/os-keypairs' %
-            self.project_id
-        )
+        """Self validate token against the Rackspace v2.0 API."""
+        url = '%s/%s' % (self.rackspace_token_endpoint, token_id)
         headers = self.headers.copy()
         headers['User-Agent'] = 'capstone/0.1'
         headers['X-Auth-Token'] = token_id
