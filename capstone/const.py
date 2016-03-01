@@ -10,9 +10,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-BASE_URL = 'https://identity.api.rackspacecloud.com/v2.0'
-TOKEN_URL = BASE_URL + '/tokens/'
-USER_URL = BASE_URL + '/users/'
 HEADERS = {'Content-Type': 'application/json'}
 
 TOKEN_RESPONSE = 'rackspace:token_response'

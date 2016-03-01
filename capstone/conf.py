@@ -22,3 +22,4 @@ _config.read(['/etc/capstone/capstone.conf',
 admin_username = _config.get('service_admin', 'username')
 admin_password = _config.get('service_admin', 'password')
 admin_project_id = _config.get('service_admin', 'project_id')
+rackspace_base_url = _config.get('rackspace', 'base_url').rstrip('/')

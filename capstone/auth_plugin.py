@@ -23,7 +23,10 @@ METHOD_NAME = 'password'
 class RackspaceIdentity(object):
 
     def url_for_user(self, user_id):
-        return const.USER_URL + user_id
+        return '%s/users/%s' % (conf.rackspace_base_url, user_id)
+
+    def token_url(self):
+        return conf.rackspace_base_url + '/tokens/'
 
     def get_user_name(self, user_id):
         token_data = self.authenticate(
@@ -46,7 +49,10 @@ class RackspaceIdentity(object):
                 "tenantId": domain_or_project,
             },
         }
-        resp = requests.post(const.TOKEN_URL, headers=const.HEADERS, json=data)
+        resp = requests.post(
+            self.token_url(),
+            headers=const.HEADERS,
+            json=data)
         resp.raise_for_status()
         return resp.json()
 
