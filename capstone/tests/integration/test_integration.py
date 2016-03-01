@@ -10,16 +10,19 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import uuid
+
 import testtools
+from testtools import matchers
 
 from os_client_config import config as cloud_config
 import requests
 
 
-class IntegrationTests(testtools.TestCase):
+class BaseIntegrationTests(testtools.TestCase):
 
     def setUp(self):
-        super(IntegrationTests, self).setUp()
+        super(BaseIntegrationTests, self).setUp()
 
         # Extract credentials so that we can build authentication requests.
         cloud_cfg = cloud_config.OpenStackConfig()
@@ -66,6 +69,21 @@ class IntegrationTests(testtools.TestCase):
         resp = requests.get(url, headers=headers)
         resp.raise_for_status()
 
+    def assertAuthFailed(self, e):
+        self.assertThat(e.response.status_code, matchers.Equals(401))
+        expected_msg = 'The request you have made requires authentication.'
+        self.assertThat(e.response.json()['error']['message'],
+            matchers.Equals(expected_msg))
+
+    def authenticate(self, auth_data):
+        resp = requests.post(
+            self.keystone_token_endpoint, headers=self.headers, json=auth_data)
+        resp.raise_for_status()
+        return resp
+
+
+class Tests(BaseIntegrationTests):
+
     def test_get_v2_token_from_rackspace(self):
         data = {
             "auth": {
@@ -80,27 +98,6 @@ class IntegrationTests(testtools.TestCase):
             self.rackspace_token_endpoint, headers=self.headers, json=data)
         resp.raise_for_status()
         token = resp.json()['access']['token']['id']
-        self.assertTokenIsUseable(token)
-
-    def test_get_v3_default_scoped_token_from_keystone(self):
-        data = {
-            "auth": {
-                "identity": {
-                    "methods": ["password"],
-                    "password": {
-                        "user": {
-                            "name": self.username,
-                            "password": self.password,
-                            "domain": {"id": self.project_id},
-                        },
-                    },
-                },
-            },
-        }
-        resp = requests.post(
-            self.keystone_token_endpoint, headers=self.headers, json=data)
-        resp.raise_for_status()
-        token = resp.headers['X-Subject-Token']
         self.assertTokenIsUseable(token)
 
     def test_get_v3_project_scoped_token_from_keystone(self):
@@ -174,3 +171,126 @@ class IntegrationTests(testtools.TestCase):
         resp.raise_for_status()
         token = resp.headers['X-Subject-Token']
         self.assertTokenIsUseable(token)
+
+    def test_get_v3_domain_scoped_token_from_keystone_using_domain_name(self):
+        data = {
+            "auth": {
+                "identity": {
+                    "methods": ["password"],
+                    "password": {
+                        "user": {
+                            "name": self.username,
+                            "password": self.password,
+                            "domain": {"id": self.project_id},
+                        },
+                    },
+                },
+                "scope": {
+                    "domain": {"name": self.project_id},
+                },
+            },
+        }
+        resp = requests.post(
+            self.keystone_token_endpoint, headers=self.headers, json=data)
+        resp.raise_for_status()
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+
+
+def generate_password_auth_data(user_data):
+    return {
+        "auth": {
+            "identity": {
+                "methods": ["password"],
+                "password": {
+                    "user": user_data,
+                },
+            },
+        },
+    }
+
+class TestGettingADefaultScopedToken(BaseIntegrationTests):
+
+    def test_with_username(self):
+        data = generate_password_auth_data({
+            "name": self.username,
+            "password": self.password,
+        })
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+
+    def test_with_username_and_domain_id(self):
+        data = generate_password_auth_data({
+            "name": self.username,
+            "password": self.password,
+            "domain": {"id": self.domain_id},
+        })
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+
+    def test_with_username_and_incorrect_domain_id(self):
+        data = generate_password_auth_data({
+            "name": self.username,
+            "password": self.password,
+            "domain": {"id": uuid.uuid4().hex},
+        })
+        e = self.assertRaises(
+            requests.exceptions.HTTPError,
+            self.authenticate,
+            data)
+        self.assertAuthFailed(e)
+
+    def test_with_user_id(self):
+        data = generate_password_auth_data({
+            "id": self.user_id,
+            "password": self.password,
+            "domain": {"id": self.domain_id},
+        })
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+
+    def test_with_user_id_and_incorrect_domain_id(self):
+        data = generate_password_auth_data({
+            "id": self.user_id,
+            "password": self.password,
+            "domain": {"id": uuid.uuid4().hex},
+        })
+        e = self.assertRaises(
+            requests.exceptions.HTTPError,
+            self.authenticate,
+            data)
+        self.assertAuthFailed(e)
+
+    def test_username_and_domain_name(self):
+        data = generate_password_auth_data({
+            "name": self.username,
+            "password": self.password,
+            "domain": {"name": self.domain_id},
+        })
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+
+    def test_username_and_incorrect_domain_name(self):
+        data = generate_password_auth_data({
+            "name": self.username,
+            "password": self.password,
+            "domain": {"name": uuid.uuid4().hex},
+        })
+        e = self.assertRaises(
+            requests.exceptions.HTTPError,
+            self.authenticate,
+            data)
+        self.assertAuthFailed(e)
+
+
+class TestValidationIssues(BaseIntegrationTests):
+
+    def test_specifying_user_domain_id_and_name_that_are_different(self):
+        pass
+
+    def test_specifying_user_domain_and_project(self):
+        pass
