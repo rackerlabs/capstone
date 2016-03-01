@@ -24,6 +24,10 @@ class IntegrationTests(testtools.TestCase):
         # Extract credentials so that we can build authentication requests.
         cloud_cfg = cloud_config.OpenStackConfig()
 
+        # Extract authentication information for the Rackspace admin cloud.
+        rackspace_admin_cloud = cloud_cfg.get_one_cloud('rackspace_admin')
+        rackspace_admin_args = rackspace_admin_cloud.get_auth_args()
+
         # Extract authentication information for the Rackspace cloud.
         rackspace_cloud = cloud_cfg.get_one_cloud('rackspace')
         rackspace_args = rackspace_cloud.get_auth_args()
@@ -31,6 +35,11 @@ class IntegrationTests(testtools.TestCase):
         # Extract authentication information for the Keystone cloud.
         keystone_cloud = cloud_cfg.get_one_cloud('keystone')
         keystone_args = keystone_cloud.get_auth_args()
+
+        # Store admin request information that is used to make Rackspace's
+        # v2.0 admin requests.
+        self.admin_username = rackspace_admin_args['username']
+        self.admin_password = rackspace_admin_args['password']
 
         # Store common request information that is used to build and make
         # authentication request.
@@ -47,22 +56,28 @@ class IntegrationTests(testtools.TestCase):
             keystone_args['auth_url'].rstrip('/') + '/auth/tokens'
         )
 
+        # Store admin token
+        admin_auth_request = {
+            "auth": {
+                "passwordCredentials": {
+                    "username": self.admin_username,
+                    "password": self.admin_password,
+                },
+            },
+        }
+        resp = requests.post(
+            self.rackspace_token_endpoint,
+            headers=self.headers,
+            json=admin_auth_request)
+        resp.raise_for_status()
+        self.admin_token = resp.json()['access']['token']['id']
+
     def assertTokenIsUseable(self, token_id):
-        """Query the Rackspace v2.0 API for the keypairs of the account.
-
-        This method asserts that given a token and a project ID, we can
-        retrieve a list of keypairs associated to the project.
-
-        :param token_id: ID of the token to pass in the request
-
-        """
-        url = (
-            'https://iad.servers.api.rackspacecloud.com/v2/%s/os-keypairs' %
-            self.project_id
-        )
+        """Validate token against the Rackspace v2.0 API."""
+        url = '%s/%s' % (self.rackspace_token_endpoint, token_id)
         headers = self.headers.copy()
         headers['User-Agent'] = 'capstone/0.1'
-        headers['X-Auth-Token'] = token_id
+        headers['X-Auth-Token'] = self.admin_token
         resp = requests.get(url, headers=headers)
         resp.raise_for_status()
 

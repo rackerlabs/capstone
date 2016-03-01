@@ -25,11 +25,19 @@ First, you must run Capstone somewhere. Deployment tooling for the Capstone
 project can be found in `capstone-deploy <https://github.com/rackerlabs/capstone-deploy>`_.
 
 Second, two files containing credentials for a Rackspace account must be on the
-system . The first is
+system . The first file should contain a Rackspace service account used to make
+admin request against Rackspace's v2.0 API and a test user account to run
+integration test against.
+
 ``~/.config/openstack/clouds.yaml``::
 
     ---
     clouds:
+      rackspace_admin:
+        profile: rackspace
+          auth:
+            username: <admin_username>
+            password: <admin_password>
       rackspace:
         profile: rackspace
           auth:
