@@ -10,12 +10,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import os
-
 from keystone import auth
 import requests
-from six.moves import configparser
 
+from capstone import conf
 from capstone import const
 
 
@@ -24,20 +22,12 @@ METHOD_NAME = 'password'
 
 class RackspaceIdentity(object):
 
-    def __init__(self):
-        config = configparser.ConfigParser()
-        config.read(['/etc/capstone/capstone.conf',
-                     os.environ.get('CAPSTONE_CONFIG', '')])
-        self._admin_username = config.get('service_admin', 'username')
-        self._admin_password = config.get('service_admin', 'password')
-        self._admin_project_id = config.get('service_admin', 'project_id')
-
     def url_for_user(self, user_id):
         return const.USER_URL + user_id
 
     def get_user_name(self, user_id):
         token_data = self.authenticate(
-            self._admin_username, self._admin_password, self._admin_project_id)
+            conf.admin_username, conf.admin_password, conf.admin_project_id)
         admin_token = token_data['access']['token']['id']
 
         headers = const.HEADERS.copy()
