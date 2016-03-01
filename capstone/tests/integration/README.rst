@@ -30,17 +30,24 @@ system . The first is
 
     ---
     clouds:
-      rackspace:
-        profile: rackspace
-          auth:
-            domain_id: <domain_id>
-            project_id: <account_id>
-            user_id: <user_id>
-            username: <username>
-            password: <password>
-          region_name: <region_id>
-      keystone:
-        profile: capstone
+        rackspace_admin:
+            profile: rackspace_admin
+            auth:
+                username: <admin_username>
+                password: <admin_password>
+
+        rackspace:
+            profile: rackspace
+            auth:
+                domain_id: <domain_id>
+                project_id: <account_id>
+                user_id: <user_id>
+                username: <username>
+                password: <password>
+            region_name: <region_id>
+
+        keystone:
+            profile: capstone
 
 The second file is ``~/.config/openstack/clouds-public.yaml``::
 
