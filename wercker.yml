@@ -1,12 +1,13 @@
+---
 box: python:2.7
 build:
-    steps:
-        - pip-install:
-            # wercker will automatically install requirements.txt if we don't
-            # tell it not to.
-            requirements_file: ""
-            packages_list: "tox"
-        - script:
-            name: run tox
-            code: |
-                tox
+  steps:
+    - pip-install:
+      # wercker will automatically install requirements.txt if we don't
+      # tell it not to.
+      requirements_file: ""
+      packages_list: "tox"
+    - script:
+  name: run tox
+  code: |
+    tox
