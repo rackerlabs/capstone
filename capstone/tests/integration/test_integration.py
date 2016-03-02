@@ -10,10 +10,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import requests
 import testtools
 
+from keystone.common.validation import validators
 from os_client_config import config as cloud_config
-import requests
+
+import schema
 
 
 class IntegrationTests(testtools.TestCase):
@@ -55,6 +58,10 @@ class IntegrationTests(testtools.TestCase):
         headers['X-Auth-Token'] = token_id
         resp = requests.get(url, headers=headers)
         resp.raise_for_status()
+
+    def assertValidTokenResponse(self, resp):
+        validator_object = validators.SchemaValidator(schema.schema)
+        validator_object.validate(resp.json()['token'])
 
     def test_get_v2_token_from_rackspace(self):
         data = {
@@ -164,3 +171,29 @@ class IntegrationTests(testtools.TestCase):
         resp.raise_for_status()
         token = resp.headers['X-Subject-Token']
         self.assertTokenIsUseable(token)
+
+    def test_get_v3_token_does_not_return_rackspace_response(self):
+        data = {
+            "auth": {
+                "identity": {
+                    "methods": ["password"],
+                    "password": {
+                        "user": {
+                            "name": self.username,
+                            "password": self.password,
+                            "domain": {"id": self.project_id},
+                        },
+                    },
+                },
+                "scope": {
+                    "project": {
+                        "name": self.project_id,
+                        "domain": {"id": self.project_id},
+                    }
+                },
+            },
+        }
+        resp = requests.post(
+            self.keystone_token_endpoint, headers=self.headers, json=data)
+        resp.raise_for_status()
+        self.assertValidTokenResponse(resp)
