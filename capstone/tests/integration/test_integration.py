@@ -174,3 +174,29 @@ class IntegrationTests(testtools.TestCase):
         resp.raise_for_status()
         token = resp.headers['X-Subject-Token']
         self.assertTokenIsUseable(token)
+
+    def test_get_v3_project_scoped_does_not_return_rackspace_response(self):
+        data = {
+            "auth": {
+                "identity": {
+                    "methods": ["password"],
+                    "password": {
+                        "user": {
+                            "name": self.username,
+                            "password": self.password,
+                            "domain": {"id": self.project_id},
+                        },
+                    },
+                },
+                "scope": {
+                    "project": {
+                        "name": self.project_id,
+                        "domain": {"id": self.project_id},
+                    }
+                },
+            },
+        }
+        resp = requests.post(
+            self.keystone_token_endpoint, headers=self.headers, json=data)
+        resp.raise_for_status()
+        self.assertFalse('rackspace:token_response' in resp.json()['token'])
