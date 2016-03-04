@@ -12,4 +12,5 @@
 
 HEADERS = {'Content-Type': 'application/json'}
 
+RACKSPACE_DOMAIN_KEY = 'RAX-AUTH:domainId'
 TOKEN_RESPONSE = 'rackspace:token_response'
