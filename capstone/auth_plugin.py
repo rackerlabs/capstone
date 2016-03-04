@@ -43,14 +43,16 @@ class RackspaceIdentity(object):
                      scope_domain_id=None, scope_project_id=None):
         admin_client = cls.from_admin_config()
         admin_client.authenticate()
-        username = admin_client.get_user(user_id)['username']
+        user_ref = admin_client.get_user(user_id)
+        username = user_ref['username']
         return cls(username, password,
                    user_domain_id=user_domain_id,
                    user_domain_name=user_domain_name,
                    user_project_id=user_project_id,
                    user_project_name=user_project_name,
                    scope_domain_id=scope_domain_id,
-                   scope_project_id=scope_project_id)
+                   scope_project_id=scope_project_id,
+                   user_ref=user_ref)
 
     @classmethod
     def from_admin_config(cls):
@@ -59,7 +61,8 @@ class RackspaceIdentity(object):
     def __init__(self, username, password,
                  user_domain_id=None, user_domain_name=None,
                  user_project_id=None, user_project_name=None,
-                 scope_domain_id=None, scope_project_id=None):
+                 scope_domain_id=None, scope_project_id=None,
+                 user_ref=None):
         self._username = username
         self._password = password
         self._user_domain_id = user_domain_id
@@ -68,6 +71,7 @@ class RackspaceIdentity(object):
         self._user_project_name = user_project_name
         self._scope_domain_id = scope_domain_id
         self._scope_project_id = scope_project_id
+        self._user_ref = user_ref
 
     def get_user_url(self, user_id):
         return '%s/users/%s' % (conf.rackspace_base_url, user_id)
@@ -79,9 +83,10 @@ class RackspaceIdentity(object):
         user_domain = self._user_domain_id or self._user_domain_name
         admin_client = RackspaceIdentity.from_admin_config()
         admin_client.authenticate()
-        user_ref = admin_client.get_user(user_id)
+        if not self._user_ref:
+            self._user_ref = admin_client.get_user(user_id)
 
-        if not user_ref[const.RACKSPACE_DOMAIN_KEY] == user_domain:
+        if not self._user_ref[const.RACKSPACE_DOMAIN_KEY] == user_domain:
             raise exception.Unauthorized()
 
     def _assert_user_project(self, token_data):
@@ -97,9 +102,11 @@ class RackspaceIdentity(object):
         # _assert_user_domain then i'll combine the two as _assert_domain
         admin_client = RackspaceIdentity.from_admin_config()
         admin_client.authenticate()
-        user_ref = admin_client.get_user(user_id)
+        if not self._user_ref:
+            self._user_ref = admin_client.get_user(user_id)
 
-        if not user_ref[const.RACKSPACE_DOMAIN_KEY] == self._scope_domain_id:
+        user_domain = self._user_ref[const.RACKSPACE_DOMAIN_KEY]
+        if not user_domain == self._scope_domain_id:
             raise exception.Unauthorized()
 
     def _assert_project_scope(self, token_data):
