@@ -7,7 +7,11 @@ cover
 *.swp
 *.pyc
 
+# ansible
+inventory
+
 # wercker
 _builds/
+_cache/
 _projects/
 _steps/
