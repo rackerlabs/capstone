@@ -84,43 +84,6 @@ class BaseIntegrationTests(testtools.TestCase):
 
 class IntegrationTests(BaseIntegrationTests):
 
-    def test_get_v2_token_from_rackspace(self):
-        data = {
-            "auth": {
-                "passwordCredentials": {
-                    "username": self.username,
-                    "password": self.password,
-                },
-                "tenantId": self.project_id,
-            },
-        }
-        resp = requests.post(
-            self.rackspace_token_endpoint, headers=self.headers, json=data)
-        resp.raise_for_status()
-        token = resp.json()['access']['token']['id']
-        self.assertTokenIsUseable(token)
-
-    def test_get_v3_default_scoped_token_from_keystone(self):
-        data = {
-            "auth": {
-                "identity": {
-                    "methods": ["password"],
-                    "password": {
-                        "user": {
-                            "name": self.username,
-                            "password": self.password,
-                            "domain": {"id": self.project_id},
-                        },
-                    },
-                },
-            },
-        }
-        resp = requests.post(
-            self.keystone_token_endpoint, headers=self.headers, json=data)
-        resp.raise_for_status()
-        token = resp.headers['X-Subject-Token']
-        self.assertTokenIsUseable(token)
-
     def test_get_v3_project_scoped_token_from_keystone(self):
         data = {
             "auth": {
@@ -163,27 +126,6 @@ class IntegrationTests(BaseIntegrationTests):
                 },
                 "scope": {
                     "domain": {"id": self.project_id},
-                },
-            },
-        }
-        resp = requests.post(
-            self.keystone_token_endpoint, headers=self.headers, json=data)
-        resp.raise_for_status()
-        token = resp.headers['X-Subject-Token']
-        self.assertTokenIsUseable(token)
-
-    def test_get_v3_default_scoped_token_from_keystone_by_user_id(self):
-        data = {
-            "auth": {
-                "identity": {
-                    "methods": ["password"],
-                    "password": {
-                        "user": {
-                            "id": self.user_id,
-                            "password": self.password,
-                            "domain": {"id": self.domain_id},
-                        },
-                    },
                 },
             },
         }
