@@ -82,33 +82,6 @@ class BaseIntegrationTests(testtools.TestCase):
         return resp
 
 
-class IntegrationTests(BaseIntegrationTests):
-
-    def test_get_v3_domain_scoped_token_from_keystone(self):
-        data = {
-            "auth": {
-                "identity": {
-                    "methods": ["password"],
-                    "password": {
-                        "user": {
-                            "name": self.username,
-                            "password": self.password,
-                            "domain": {"id": self.project_id},
-                        },
-                    },
-                },
-                "scope": {
-                    "domain": {"id": self.project_id},
-                },
-            },
-        }
-        resp = requests.post(
-            self.keystone_token_endpoint, headers=self.headers, json=data)
-        resp.raise_for_status()
-        token = resp.headers['X-Subject-Token']
-        self.assertTokenIsUseable(token)
-
-
 def generate_password_auth_data(user_data):
     return {
         "auth": {
@@ -401,3 +374,32 @@ class TestGettingAProjectScopedToken(BaseIntegrationTests):
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
         self.assertTokenIsUseable(token)
+
+
+class TestGettingADomainScopedToken(BaseIntegrationTests):
+
+    def test(self):
+        data = generate_password_auth_data_with_scope(
+            user={
+                "name": self.username,
+                "password": self.password,
+                "domain": {"id": self.domain_id},
+            },
+            scope={"domain": {"id": self.domain_id}})
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+
+    def test_invalid(self):
+        data = generate_password_auth_data_with_scope(
+            user={
+                "name": self.username,
+                "password": self.password,
+                "domain": {"id": self.domain_id},
+            },
+            scope={"domain": {"id": uuid.uuid4().hex}})
+        e = self.assertRaises(
+            requests.exceptions.HTTPError,
+            self.authenticate,
+            data)
+        self.assertAuthFailed(e)
