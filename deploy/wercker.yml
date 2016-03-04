@@ -1,0 +1,38 @@
+---
+
+box: ubuntu:14.04
+build:
+  steps:
+    - script:
+      name: Install apt requirements
+      code: |
+        apt-get update
+        # apt-transport-https is only required due to
+        # https://bugs.launchpad.net/openstack-ansible/+bug/1547541
+        apt-get install -V -y python-dev git-core apt-transport-https curl \
+        libssl-dev
+    - script:
+      name: Get modern pip
+      code: curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
+    - script:
+      name: Install pip
+      code: python /tmp/get-pip.py
+    - script:
+      name: Install pip requirements
+      code: pip install "ansible<2" yamllint
+    - script:
+      name: Validate YAML
+      code: yamllint .
+    - script:
+      name: Install ansible galaxy requirements
+      code: ansible-galaxy install -r ansible-role-requirements.yml
+    - script:
+      name: Syntax check ansible playbook
+      code: ansible-playbook --syntax-check -i inventory_localhost deploy.yml
+    - script:
+      name: Run playbook
+      code: ansible-playbook -i inventory_localhost deploy.yml
+    - script:
+      name: Attempt to curl the keystone endpoint
+      # at least make sure the keystone service is running
+      code: curl http://localhost:5000/
