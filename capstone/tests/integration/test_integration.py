@@ -219,6 +219,18 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
         token = resp.headers['X-Subject-Token']
         self.assertTokenIsUseable(token)
 
+    def test_with_user_id(self):
+        data = generate_password_auth_data({
+            "id": self.user_id,
+            "password": self.password,
+        })
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+
+
+class TestGettingADefaultScopedTokenWithUserDomain(BaseIntegrationTests):
+
     def test_with_username_and_domain_id(self):
         data = generate_password_auth_data({
             "name": self.username,
@@ -263,15 +275,6 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
             data)
         self.assertAuthFailed(e)
 
-    def test_with_user_id(self):
-        data = generate_password_auth_data({
-            "id": self.user_id,
-            "password": self.password,
-        })
-        resp = self.authenticate(data)
-        token = resp.headers['X-Subject-Token']
-        self.assertTokenIsUseable(token)
-
     def test_with_user_id_and_domain_id(self):
         data = generate_password_auth_data({
             "id": self.user_id,
@@ -309,6 +312,97 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
             "id": self.user_id,
             "password": self.password,
             "domain": {"name": uuid.uuid4().hex},
+        })
+        e = self.assertRaises(
+            requests.exceptions.HTTPError,
+            self.authenticate,
+            data)
+        self.assertAuthFailed(e)
+
+
+class TestGettingADefaultScopedTokenWithUserProject(BaseIntegrationTests):
+
+    def test_with_username_and_project_id(self):
+        data = generate_password_auth_data({
+            "name": self.username,
+            "password": self.password,
+            "project": {"id": self.project_id},
+        })
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+
+    def test_with_username_and_incorrect_project_id(self):
+        data = generate_password_auth_data({
+            "name": self.username,
+            "password": self.password,
+            "project": {"id": uuid.uuid4().hex},
+        })
+        e = self.assertRaises(
+            requests.exceptions.HTTPError,
+            self.authenticate,
+            data)
+        self.assertAuthFailed(e)
+
+    def test_with_username_and_project_name(self):
+        data = generate_password_auth_data({
+            "name": self.username,
+            "password": self.password,
+            "project": {"name": self.project_id},
+        })
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+
+    def test_with_username_and_incorrect_project_name(self):
+        data = generate_password_auth_data({
+            "name": self.username,
+            "password": self.password,
+            "project": {"name": uuid.uuid4().hex},
+        })
+        e = self.assertRaises(
+            requests.exceptions.HTTPError,
+            self.authenticate,
+            data)
+        self.assertAuthFailed(e)
+
+    def test_with_user_id_and_project_id(self):
+        data = generate_password_auth_data({
+            "id": self.user_id,
+            "password": self.password,
+            "project": {"id": self.project_id},
+        })
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+
+    def test_with_user_id_and_incorrect_project_id(self):
+        data = generate_password_auth_data({
+            "id": self.user_id,
+            "password": self.password,
+            "project": {"id": uuid.uuid4().hex},
+        })
+        e = self.assertRaises(
+            requests.exceptions.HTTPError,
+            self.authenticate,
+            data)
+        self.assertAuthFailed(e)
+
+    def test_with_user_id_and_project_name(self):
+        data = generate_password_auth_data({
+            "id": self.user_id,
+            "password": self.password,
+            "project": {"name": self.project_id},
+        })
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+
+    def test_with_user_id_and_incorrect_project_name(self):
+        data = generate_password_auth_data({
+            "id": self.user_id,
+            "password": self.password,
+            "project": {"name": uuid.uuid4().hex},
         })
         e = self.assertRaises(
             requests.exceptions.HTTPError,
