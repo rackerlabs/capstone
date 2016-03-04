@@ -46,7 +46,6 @@ class RackspaceIdentity(object):
                     "username": username,
                     "password": password,
                 },
-                "tenantId": domain_or_project,
             },
         }
         resp = requests.post(
