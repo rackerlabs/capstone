@@ -11,6 +11,7 @@
 # under the License.
 
 from keystone import auth
+from keystone import exception
 import requests
 
 from capstone import conf
@@ -22,6 +23,26 @@ METHOD_NAME = 'password'
 
 class RackspaceIdentity(object):
 
+    @classmethod
+    def from_username(cls, username, password, domain_or_project=None):
+        return cls(username, password, domain_or_project)
+
+    @classmethod
+    def from_user_id(cls, user_id, password, domain_or_project=None):
+        admin_client = cls.from_admin_config()
+        admin_client.authenticate()
+        username = admin_client.get_user_name(user_id)
+        return cls(username, password, domain_or_project)
+
+    @classmethod
+    def from_admin_config(cls):
+        return cls.from_username(conf.admin_username, conf.admin_password)
+
+    def __init__(self, username, password, domain_or_project):
+        self._username = username
+        self._password = password
+        self._domain_or_project = domain_or_project
+
     def get_user_url(self, user_id):
         return '%s/users/%s' % (conf.rackspace_base_url, user_id)
 
@@ -29,8 +50,7 @@ class RackspaceIdentity(object):
         return conf.rackspace_base_url + '/tokens/'
 
     def get_user_name(self, user_id):
-        token_data = self.authenticate(
-            conf.admin_username, conf.admin_password, conf.admin_project_id)
+        token_data = self.authenticate()
         admin_token = token_data['access']['token']['id']
 
         headers = const.HEADERS.copy()
@@ -39,12 +59,12 @@ class RackspaceIdentity(object):
         resp.raise_for_status()
         return resp.json()['user']['username']
 
-    def authenticate(self, username, password, domain_or_project):
+    def authenticate(self):
         data = {
             "auth": {
                 "passwordCredentials": {
-                    "username": username,
-                    "password": password,
+                    "username": self._username,
+                    "password": self._password,
                 },
             },
         }
@@ -65,15 +85,25 @@ class Password(auth.AuthMethodHandler):
         # TODO(dolph): if (domain_id and project_id), raise a 400
         domain_or_project = domain_id or project_id
 
-        identity = RackspaceIdentity()
-
         username = auth_payload['user'].get('name')
-        if 'id' in auth_payload['user'] and not username:
-            username = identity.get_user_name(auth_payload['user']['id'])
 
-        token_data = identity.authenticate(username,
-                                           auth_payload['user']['password'],
-                                           domain_or_project)
+        try:
+            if not username:
+                identity = RackspaceIdentity.from_user_id(
+                    auth_payload['user']['id'],
+                    auth_payload['user']['password'],
+                    domain_or_project)
+            else:
+                identity = RackspaceIdentity.from_username(
+                    username,
+                    auth_payload['user']['password'],
+                    domain_or_project=domain_or_project)
+            token_data = identity.authenticate()
+
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 401:
+                raise exception.Unauthorized()
+            raise
 
         auth_context['user_id'] = token_data['access']['user']['id']
         auth_context[const.TOKEN_RESPONSE] = token_data
