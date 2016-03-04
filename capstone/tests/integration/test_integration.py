@@ -84,33 +84,6 @@ class BaseIntegrationTests(testtools.TestCase):
 
 class IntegrationTests(BaseIntegrationTests):
 
-    def test_get_v3_project_scoped_token_from_keystone(self):
-        data = {
-            "auth": {
-                "identity": {
-                    "methods": ["password"],
-                    "password": {
-                        "user": {
-                            "name": self.username,
-                            "password": self.password,
-                            "domain": {"id": self.project_id},
-                        },
-                    },
-                },
-                "scope": {
-                    "project": {
-                        "name": self.project_id,
-                        "domain": {"id": self.project_id},
-                    }
-                },
-            },
-        }
-        resp = requests.post(
-            self.keystone_token_endpoint, headers=self.headers, json=data)
-        resp.raise_for_status()
-        token = resp.headers['X-Subject-Token']
-        self.assertTokenIsUseable(token)
-
     def test_get_v3_domain_scoped_token_from_keystone(self):
         data = {
             "auth": {
@@ -145,6 +118,20 @@ def generate_password_auth_data(user_data):
                     "user": user_data,
                 },
             },
+        },
+    }
+
+
+def generate_password_auth_data_with_scope(user, scope):
+    return {
+        "auth": {
+            "identity": {
+                "methods": ["password"],
+                "password": {
+                    "user": user,
+                },
+            },
+            "scope": scope,
         },
     }
 
@@ -351,3 +338,66 @@ class TestGettingADefaultScopedTokenWithUserProject(BaseIntegrationTests):
             self.authenticate,
             data)
         self.assertAuthFailed(e)
+
+
+class TestGettingAProjectScopedToken(BaseIntegrationTests):
+
+    def test(self):
+        data = generate_password_auth_data_with_scope(
+            user={
+                "name": self.username,
+                "password": self.password,
+                "domain": {"id": self.domain_id},
+            },
+            scope={"project": {"id": self.project_id}})
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+
+    def test_invalid(self):
+        data = generate_password_auth_data_with_scope(
+            user={
+                "name": self.username,
+                "password": self.password,
+                "domain": {"id": self.domain_id},
+            },
+            scope={"project": {"id": uuid.uuid4().hex}})
+        e = self.assertRaises(
+            requests.exceptions.HTTPError,
+            self.authenticate,
+            data)
+        self.assertAuthFailed(e)
+
+    def test_with_domain(self):
+        data = generate_password_auth_data_with_scope(
+            user={
+                "name": self.username,
+                "password": self.password,
+                "domain": {"id": self.domain_id},
+            },
+            scope={
+                "project": {
+                    "id": self.project_id,
+                    "domain": {"id": self.domain_id},
+                }
+            })
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+
+    def test_with_invalid_domain(self):
+        data = generate_password_auth_data_with_scope(
+            user={
+                "name": self.username,
+                "password": self.password,
+                "domain": {"id": self.domain_id},
+            },
+            scope={
+                "project": {
+                    "id": self.project_id,
+                    "domain": {"id": uuid.uuid4().hex},
+                }
+            })
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
