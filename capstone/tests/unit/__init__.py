@@ -15,7 +15,6 @@ from oslo_config import cfg
 from oslo_log import log
 
 
-
 # NOTE(dstanek): This is oslo's world. I just live in it.
 log.register_options(cfg.CONF)
 keystone_config.configure(cfg.CONF)
