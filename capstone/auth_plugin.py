@@ -81,6 +81,12 @@ class RackspaceIdentity(object):
             raise exception.Unauthorized()
 
     def _assert_domain_scope(self, user_id):
+        sentinal = object()
+        tenants = (role.get('tenantId', sentinal)
+                   for role in token_data['access']['user']['roles'])
+        if self._user_domain_id in tenants:
+            return  # shortcut for the common case
+
         # TODO(dstanek): if this will be truly the same as
         # _assert_user_domain then i'll combine the two as _assert_domain
         admin_client = RackspaceIdentity.from_admin_config()
