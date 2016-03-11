@@ -1,14 +1,14 @@
 Capstone
 ========
 
-.. image:: https://app.wercker.com/status/409d943a74ce1d67a566d80ecbacd5fd/s/master
-   :target: https://app.wercker.com/#applications/56bd3ba8239090c836084417
-
 Entry points for `OpenStack Keystone <https://github.com/openstack/keystone>`_
 in the Rackspace Public Cloud.
 
-High-level architecture
------------------------
+Design
+------
+
+Architecture
+~~~~~~~~~~~~
 
 The existing v2 identity system basically works like this:
 
@@ -32,8 +32,8 @@ the existing v2 identity system:
    Java v2->Keystone v3: v2 auth response
    Keystone v3->User: v3 auth response
 
-Design constraints
-------------------
+Constraints
+~~~~~~~~~~~
 
 1. **Reliability.**
 
@@ -65,7 +65,7 @@ Design constraints
    - Keystone v3 should add minimal response time overhead to Rackspace v2.
 
 Use cases
----------
+~~~~~~~~~
 
 1. **Create a token.** This is required for defcore compliance. The returned
    token must work with existing OpenStack services, which currently use v2 for
@@ -107,7 +107,7 @@ Use cases
    each other (trusts or otherwise).
 
 v3 ⟷ v2 attribute mapping
--------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 +-----------------------+--------------------+
 | v3                    | v2                 |
@@ -132,6 +132,95 @@ v3 ⟷ v2 attribute mapping
 +-----------------------+--------------------+
 | domain name           | tenant name        |
 +-----------------------+--------------------+
+
+Testing
+-------
+
+.. image:: https://app.wercker.com/status/409d943a74ce1d67a566d80ecbacd5fd/s/master
+   :target: https://app.wercker.com/#applications/56bd3ba8239090c836084417
+
+Unit tests
+~~~~~~~~~~
+
+Unit tests can be run in a local development environment using `tox
+<https://testrun.org/tox/latest/>`_, simply by running tox::
+
+    tox
+
+Integration tests
+~~~~~~~~~~~~~~~~~
+
+Integration tests against Capstone and the Rackspace v2.0 Identity API. The
+test executes the following flow:
+
+.. image::
+    https://www.websequencediagrams.com/cgi-bin/cdraw?lz=dGl0bGUgSW50ZWdyYXRpb24gdGVzdCBmbG93CgAKDFRlc3QgLT4gUmFja3NwYWNlIHYyLjAgRW5kcG9pbnQ6IHYyIGF1dGggcmVxdWVzdAoAEhcgLT4AYQ1UZXMAMA1zcG9uc2UATS5jYW4gSSBkbyBzb21ldGhpbmcgdXNlZnVsIHdpdGggdGhpcyB0b2tlbj8AaC5saXN0IG9mIGtleSBwYWlycwCBfRVLZXlzdG9uZSB2MwCCAwwzAIIBDgASFACBdRcAMQkAb4Ed&s=napkin
+
+.. https://www.websequencediagrams.com/ source:
+   title Integration test flow
+   Integration Test -> Rackspace v2.0 Endpoint: v2 auth request
+   Rackspace v2.0 Endpoint -> Integration Test: v2 auth response
+   Integration Test -> Rackspace v2.0 Endpoint: can I do something useful with this token?
+   Rackspace v2.0 Endpoint -> Integration Test: list of key pairs
+   Integration Test -> Keystone v3 Endpoint: v3 auth request
+   Keystone v3 Endpoint -> Integration Test: v3 auth response
+   Integration Test -> Rackspace v2.0 Endpoint: can I do something useful with this token?
+   Rackspace v2.0 Endpoint -> Integration Test: list of key pairs
+
+These tests require additional information in order to be run successfully. In
+order to run these tests, the following steps must be done.
+
+First, you must run Capstone somewhere. Deployment tooling for the Capstone
+project can be found in `capstone-deploy
+<https://github.com/rackerlabs/capstone-deploy>`_.
+
+Second, two files containing credentials for a Rackspace account must be on the
+system . The first is ``~/.config/openstack/clouds.yaml``::
+
+    ---
+    clouds:
+      rackspace:
+        profile: rackspace
+          auth:
+            domain_id: <domain_id>
+            project_id: <account_id>
+            user_id: <user_id>
+            username: <username>
+            password: <password>
+          region_name: <region_id>
+      keystone:
+        profile: capstone
+
+The second file is ``~/.config/openstack/clouds-public.yaml``::
+
+    ---
+    public-clouds:
+      rackspace:
+        auth:
+          auth_url: https://identity.api.rackspacecloud.com/v2.0/
+      capstone:
+        auth:
+          auth_url: http://localhost:5000/v3/
+
+The integration test will use ``os-cloud-config`` to parse these files to build
+requests to make against both the Rackspace endpoint and the Keystone endpoint.
+The tests can be run through ``tox``::
+
+    tox -e integration
+
+Or any python test runner::
+
+    python -m unittest \
+        capstone.tests.integration.test_integration.IntegrationTests
+
+Continuous integration
+~~~~~~~~~~~~~~~~~~~~~~
+
+Our continuous integration process leverages `wercker <http://wercker.com/>`_.
+With a local `docker server <https://www.docker.com/>`_ and the `wercker CLI
+<http://wercker.com/cli/>`_ installed, you can replicate the CI process with::
+
+    wercker build
 
 Deployment
 ----------
@@ -186,68 +275,3 @@ The developer workflow mirrors that of OpenStack:
 - When your patch receives a +2 and is passing tests, it will be automatically
   merged.
 
-Integration Tests
-~~~~~~~~~~~~~~~~~
-
-Integration tests against Capstone and the Rackspace v2.0 Identity API. The
-test executes the following flow:
-
-.. image::
-    https://www.websequencediagrams.com/cgi-bin/cdraw?lz=dGl0bGUgSW50ZWdyYXRpb24gdGVzdCBmbG93CgAKDFRlc3QgLT4gUmFja3NwYWNlIHYyLjAgRW5kcG9pbnQ6IHYyIGF1dGggcmVxdWVzdAoAEhcgLT4AYQ1UZXMAMA1zcG9uc2UATS5jYW4gSSBkbyBzb21ldGhpbmcgdXNlZnVsIHdpdGggdGhpcyB0b2tlbj8AaC5saXN0IG9mIGtleSBwYWlycwCBfRVLZXlzdG9uZSB2MwCCAwwzAIIBDgASFACBdRcAMQkAb4Ed&s=napkin
-
-.. https://www.websequencediagrams.com/ source:
-   title Integration test flow
-   Integration Test -> Rackspace v2.0 Endpoint: v2 auth request
-   Rackspace v2.0 Endpoint -> Integration Test: v2 auth response
-   Integration Test -> Rackspace v2.0 Endpoint: can I do something useful with this token?
-   Rackspace v2.0 Endpoint -> Integration Test: list of key pairs
-   Integration Test -> Keystone v3 Endpoint: v3 auth request
-   Keystone v3 Endpoint -> Integration Test: v3 auth response
-   Integration Test -> Rackspace v2.0 Endpoint: can I do something useful with this token?
-   Rackspace v2.0 Endpoint -> Integration Test: list of key pairs
-
-These tests require additional information in order to be run successfully. In
-order to run these tests, the following steps must be done.
-
-First, you must run Capstone somewhere. Deployment tooling for the Capstone
-project can be found in `capstone-deploy <https://github.com/rackerlabs/capstone-deploy>`_.
-
-Second, two files containing credentials for a Rackspace account must be on the
-system . The first is
-``~/.config/openstack/clouds.yaml``::
-
-    ---
-    clouds:
-      rackspace:
-        profile: rackspace
-          auth:
-            domain_id: <domain_id>
-            project_id: <account_id>
-            user_id: <user_id>
-            username: <username>
-            password: <password>
-          region_name: <region_id>
-      keystone:
-        profile: capstone
-
-The second file is ``~/.config/openstack/clouds-public.yaml``::
-
-    ---
-    public-clouds:
-      rackspace:
-        auth:
-          auth_url: https://identity.api.rackspacecloud.com/v2.0/
-      capstone:
-        auth:
-          auth_url: http://localhost:5000/v3/
-
-The integration test will use ``os-cloud-config`` to parse these files to build
-requests to make against both the Rackspace endpoint and the Keystone endpoint.
-The tests can be run through ``tox``::
-
-    tox -e integration
-
-Or any python test runner::
-
-    python -m unittest \
-    capstone.tests.integration.test_integration.IntegrationTests
