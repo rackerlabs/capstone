@@ -170,9 +170,7 @@ test executes the following flow:
 These tests require additional information in order to be run successfully. In
 order to run these tests, the following steps must be done.
 
-First, you must run Capstone somewhere. Deployment tooling for the Capstone
-project can be found in `capstone-deploy
-<https://github.com/rackerlabs/capstone-deploy>`_.
+First, you must run Capstone somewhere (see the *Deployment* section below).
 
 Second, two files containing credentials for a Rackspace account must be on the
 system . The first is ``~/.config/openstack/clouds.yaml``::
@@ -225,8 +223,33 @@ With a local `docker server <https://www.docker.com/>`_ and the `wercker CLI
 Deployment
 ----------
 
-Deployment tooling lives in a separate repository: `rackerlabs/capstone-deploy
-<https://github.com/rackerlabs/capstone-deploy>`_.
+Deployment tooling lives in the ``deploy/`` directory and uses `ansible
+<https://www.ansible.com/>`_.
+
+Prior to deploying capstone, specific upstream dependencies need to be
+resolved. To resolve these using ``ansible-galaxy`` run the following::
+
+    ansible-galaxy install --role-file=ansible-role-requirements.yml \
+                           --ignore-errors --force
+
+The ``deploy.yml`` playbook will expect an inventory file which will look
+like::
+
+    [keystone_all]
+    <keystone_endpoint_ip_address>
+
+The playbook will also expect us to provide a ``capstone.conf``::
+
+    [service_admin]
+    username = <username>
+    password = <password>
+    project_id = <project_id>
+    rackspace_base_url = <rackspace_api_endpoint>
+
+This account is provided by Rackspace. Once the ``capstone.conf`` and
+``inventory`` files are in place we're ready to deploy::
+
+    ansible-playbook -i inventory deploy.yml
 
 Contributing
 ------------
