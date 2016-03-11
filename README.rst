@@ -271,10 +271,10 @@ you're looking for additional detail), except that we host our code on
 `github.com/rackerlabs <https://github.com/rackerlabs>`_ instead of
 `github.com/openstack <https://github.com/openstack>`_, and therefore must also
 use `GerritHub <https://gerrithub.io/>`_ instead of `review.openstack.org
-<https://review.openstack.org/>` for code reviews. These differences result in
+<https://review.openstack.org/>`_ for code reviews. These differences result in
 the following process:
 
-- You'll first need a `GitHub <https://github.com/>_` account, and then use
+- You'll first need a `GitHub <https://github.com/>`_ account, and then use
   that to authenticate with `GerritHub <https://gerrithub.io/>`_ (signing in
   with "DEFAULT" access is sufficient).
 
