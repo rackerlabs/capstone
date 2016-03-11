@@ -1,0 +1,108 @@
+# This follows the documentation to install Jenkins, Docker, and Wercker on:
+# https://wiki.jenkins-ci.org/display/JENKINS/Installing+Jenkins+on+Ubuntu
+# https://docs.docker.com/engine/installation/linux/ubuntulinux/
+# http://wercker.com/cli/
+
+---
+
+- hosts: jenkins
+  remote_user: root
+  tasks:
+    - name: Ensure that apt works with HTTPS
+      apt:
+        pkg={{ item }}
+        state=present
+      with_items:
+        - apt-transport-https
+        - ca-certificates
+
+    - name: Add Jenkins apt key
+      apt_key:
+        url=https://jenkins-ci.org/debian/jenkins-ci.org.key
+        state=present
+
+    - name: Add Docker apt keys
+      apt_key:
+        keyserver=hkp://p80.pool.sks-keyservers.net:80
+        id=58118E89F3A912897C070ADBF76221572C52609D
+
+    - name: Add Jenkins and Docker apt repositories
+      apt_repository:
+        repo='{{ item }}'
+        state=present
+      with_items:
+        - 'deb http://pkg.jenkins-ci.org/debian binary/'
+        - 'deb https://apt.dockerproject.org/repo ubuntu-trusty main'
+
+    - name: Install Jenkins and Docker
+      apt:
+        pkg={{ item }}
+        state=present
+        update_cache=yes
+      with_items:
+        - jenkins
+        - apparmor  # Required for Docker
+        - linux-image-extra-{{ ansible_kernel }}  # Required for Docker
+        - docker-engine
+
+    - name: Add the Jenkins user to the Docker user group and create an SSH key
+      user:
+        name=jenkins
+        groups=docker
+        generate_ssh_key=yes
+
+    - name: Peek at the Jenkins public SSH key
+      shell: cat /var/lib/jenkins/.ssh/id_rsa.pub
+      register: jenkins_ssh_key
+
+    # This lets you copy the Jenkins identity to Github as a deploy key, or,
+    # potentially, to your deploy targets as an authorized_key.
+    - name: Jenkins public SSH key
+      debug: var=jenkins_ssh_key['stdout']
+
+    - name: Drop root configuration file for Jenkins
+      template:
+        src=templates/jenkins/config.xml
+        dest=/var/lib/jenkins/
+        owner=jenkins
+        group=jenkins
+        mode=0644
+
+    - name: Ensure Jenkins and the Docker server are running
+      service:
+        name={{ item }}
+        state=started
+        enabled=yes
+      with_items:
+        - jenkins
+        - docker
+
+    - name: Route external HTTP requests to the default Jenkins port
+      command:
+        iptables \
+            -t nat \
+            -A PREROUTING \
+            -p tcp \
+            --dport 80 \
+            -j REDIRECT \
+            --to-ports 8080
+
+    - name: Route internal HTTP requests to the default Jenkins port
+      command:
+        iptables \
+            -t nat \
+            -I OUTPUT \
+            -p tcp \
+            -d 127.0.0.1 \
+            --dport 80 \
+            -j REDIRECT \
+            --to-ports 8080
+
+    - name: Download wercker CLI
+      get_url:
+        url=https://s3.amazonaws.com/downloads.wercker.com/cli/stable/linux_amd64/wercker
+        dest=/usr/local/bin/wercker
+        mode=0755
+
+    - name: Test wercker
+      command: wercker version

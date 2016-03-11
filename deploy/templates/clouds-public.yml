@@ -1,0 +1,8 @@
+---
+public-clouds:
+  rackspace:
+    auth:
+      auth_url: https://identity.api.rackspacecloud.com/v2.0/
+  capstone:
+    auth:
+      auth_url: {{capstone_auth_url}}

@@ -1,0 +1,70 @@
+---
+
+- name: Deploy capstone
+  hosts: keystone_all
+  roles:
+    - os_keystone
+  post_tasks:
+    - name: Install capstone from source
+      pip:
+        name: "git+https://github.com/rackerlabs/capstone#egg=capstone"
+        virtualenv: "{{ keystone_venv_bin | dirname }}"
+        virtualenv_site_packages: "no"
+        extra_args: "{{ pip_install_options|default('') }}"
+      tags:
+        - capstone
+    - name: Create capstone dir
+      file:
+        path: /etc/capstone
+        state: directory
+        owner: keystone
+      tags:
+        - capstone
+    - name: Drop capstone.conf
+      template:
+        src: templates/etc-capstone.conf
+        dest: /etc/capstone/capstone.conf
+        owner: keystone
+      tags:
+        - capstone
+    - name: Restart apache
+      service:
+        name: "apache2"
+        state: "restarted"
+        pattern: "apache2"
+  vars:
+    keystone_venv_tag: "capstone-testing"
+    keystone_venv_bin: "/openstack/venvs/keystone-{{ keystone_venv_tag }}/bin"
+    keystone_git_install_branch: stable/liberty
+    keystone_developer_mode: true
+    keystone_database_enabled: false
+    keystone_service_setup: false
+    keystone_token_provider: capstone
+    keystone_database_connection_string: none
+    keystone_public_endpoint: "https://identity.api.rackspacecloud.com"
+    keystone_service_adminuri: "https://identity.api.rackspacecloud.com"
+    internal_lb_vip_address: localhost
+    keystone_auth_admin_token: none
+    keystone_rabbitmq_password: none
+    galera_client_drop_config_file: false
+    keystone_keystone_conf_overrides:
+      auth:
+        method: password
+        password: capstone
+    # NOTE(lbragstad): We don't require all the pip packages that are included
+    # in the upstream os_keystone keystone_pip_packages list. Examples of these
+    # would be ldappool, lxml, PyMySQL, pysaml2, and python-ldap. Let's
+    # override keystone_pip_packages here so that we don't install pip packages
+    # we don't need.
+    keystone_pip_packages:
+      - argparse
+      - keystone
+      - keystonemiddleware
+      - oslo.log
+      - oslo.middleware
+      - pbr
+      - pycrypto
+      - python-keystoneclient
+      - python-memcached
+      - python-openstackclient
+      - repoze.lru

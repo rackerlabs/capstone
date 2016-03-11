@@ -1,0 +1,19 @@
+---
+# This play is only used to setup a host to run capstone integration tests.
+# This play should not be run on a production environment because it will
+# create credential files on the host. The credential files are used to run
+# integration tests and not required for capstone to function properly.
+- name: Setup integration testing requirements
+  hosts: keystone_all
+  tasks:
+    - name: Create directory for os-client-config
+      file:
+        path: ~/.config/openstack
+        state: directory
+    - name: Drop yaml files for os-client-config
+      template:
+        src: templates/{{ item }}
+        dest: ~/.config/openstack/{{ item }}
+      with_items:
+        - clouds.yml
+        - clouds-public.yml
