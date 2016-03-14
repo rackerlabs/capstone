@@ -1,0 +1,9 @@
+capstone:
+    image: capstone:<docker_tag>
+    ports:
+        - 5000:5000
+        - 35357:35357
+    environment:
+        USERNAME: <admin_username>
+        PASSWORD: <admin_password>
+        BASE_URL: <identity_base_url>
