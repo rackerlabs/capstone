@@ -27,6 +27,7 @@
         owner: keystone
       tags:
         - capstone
+        - config
     - name: Restart apache
       service:
         name: "apache2"
