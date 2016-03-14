@@ -251,6 +251,16 @@ This account is provided by Rackspace. Once the ``capstone.conf`` and
 
     ansible-playbook -i inventory deploy.yml
 
+Docker
+------
+
+Docker image can be built using ``build_docker.sh`` in the deploy directory.
+The created image can then be run using the ``docker-compose.yml`` file::
+
+    cd deploy
+    ./build_docker.sh
+    docker-compose up
+
 Contributing
 ------------
 
