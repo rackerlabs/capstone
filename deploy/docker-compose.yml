@@ -1,0 +1,9 @@
+capstone:
+    image: capstone:latest
+    ports:
+        - 5000:5000
+        - 35357:35357
+    environment:
+        USERNAME: admin
+        PASSWORD: secrete
+        BASE_URL: https://identity.api.rackspacecloud.com/v2.0
