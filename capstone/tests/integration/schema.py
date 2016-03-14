@@ -50,7 +50,7 @@ _endpoint_properties = {
     'id': {'type': 'string'},
     'interface': {'type': 'string'},
     'url': parameter_types.url,
-    'region': {'type': 'string'},
+    'region': {'type': ['string', 'null']},
 }
 
 _service_properties = {
