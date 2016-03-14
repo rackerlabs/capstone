@@ -1,0 +1,11 @@
+[keystone_all]
+localhost ansible_connection=local
+
+[keystone_all:vars]
+service_user_name = $SERVICE_USER_NAME
+service_user_password = $SERVICE_USER_PASSWORD
+rackspace_base_url = $RACKSPACE_BASE_URL
+service_user_id = admin
+service_user_domain_id = admin
+service_user_account_number = admin
+capstone_auth_url = http://localhost:5000/v3/

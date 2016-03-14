@@ -274,6 +274,23 @@ The resulting build will live under the ``capstone/dist/``. Note that ``pip``
 will only recognize capstone as being version ``0.1``, regardless of the commit
 that was used in the build.
 
+Docker
+------
+
+Docker image can be built using ``build_docker.sh`` in the deploy directory.
+The Docker image is tagged with the git sha revision and latest tag.  The created
+image can then be run using docker-compose.  The ``docker-compose.yml`` file
+exposes the following environment variables: SERVICE_USER_NAME,
+SERVICE_USER_PASSWORD, RACKSPACE_BASE_URL.
+
+Create the docker image and run it with the following commands::
+
+    cd deploy
+    ./build_docker.sh
+    docker-compose up
+
+
+
 Contributing
 ------------
 
