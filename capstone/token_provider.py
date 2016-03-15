@@ -12,6 +12,7 @@
 
 """Rackspace Compatibility Token Provider."""
 
+import datetime
 import hashlib
 
 from keystone.auth import controllers
@@ -27,6 +28,8 @@ from capstone import const
 
 
 LOG = log.getLogger(__name__)
+
+TIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 controllers.Auth._check_and_set_default_scoping = lambda *a, **k: None
 controllers.AuthInfo._validate_and_normalize_scope_data = lambda *a, **k: None
@@ -77,9 +80,12 @@ class RackspaceTokenDataHelper(object):
                               issued_at=None):
         if not expires:
             expires = provider.default_expire_time()
-        if not isinstance(expires, six.string_types):
-            expires = utils.isotime(expires, subsecond=True)
-        token_data['expires_at'] = expires
+        elif isinstance(expires, six.string_types):
+            expires = datetime.datetime.strptime(expires, TIME_FORMAT)
+        token_data['expires_at'] = utils.isotime(expires, subsecond=True)
+        if issued_at and isinstance(issued_at, six.string_types):
+            issued = datetime.datetime.strptime(issued_at, TIME_FORMAT)
+            issued_at = utils.isotime(issued, subsecond=True)
         token_data['issued_at'] = (issued_at or utils.isotime(subsecond=True))
 
     def _populate_audit_info(self, token_data, audit_info=None):
