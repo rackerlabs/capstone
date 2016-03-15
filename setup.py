@@ -13,11 +13,28 @@
 # under the License.
 
 import os
+import subprocess
 
 import setuptools
 
 
+VERSION = '0.1'
 HERE = os.path.dirname(__file__)
+
+
+def get_version():
+    def git_sha(refspec):
+        output = subprocess.check_output(['git', 'show-ref', refspec])
+        return output.split(' ')[0]
+
+    try:
+        tagged_sha = git_sha(VERSION)
+        current_sha = git_sha('HEAD')
+        if tagged_sha != current_sha:
+            return '%s+%s' % (VERSION, current_sha.strip()[:7])
+        return VERSION
+    except subprocess.CalledProcessError:
+        return VERSION
 
 
 def slurp(filename):
@@ -31,7 +48,7 @@ def read_requirements(filename):
 
 setuptools.setup(
     name='capstone',
-    version='0.1',
+    version=get_version(),
     description='Keysone Drivers & Plugins for Rackspace',
     long_description=slurp('README.rst'),
     author='The Rackspace Identity Team',
