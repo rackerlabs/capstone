@@ -251,6 +251,22 @@ This account is provided by Rackspace. Once the ``capstone.conf`` and
 
     ansible-playbook -i inventory deploy.yml
 
+Building
+~~~~~~~~
+
+Capstone uses very basic versioning. The following is an example of a capstone
+build::
+
+    capstone-0.1-gbe7bcf8.tar.gz
+
+The SHA of the build ``be7bcf8`` is appended to be end of the version. A
+specific version of capstone can be built by using the ``setup.py`` script::
+
+    git checkout be7bcf8
+    python setup.py sdist
+
+The resulting build will live under the ``capstone/dist/``.
+
 Contributing
 ------------
 
