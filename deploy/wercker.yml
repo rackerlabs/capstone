@@ -39,7 +39,7 @@ build:
       code: python /tmp/get-pip.py
     - script:
       name: Install pip requirements
-      code: pip install "ansible<2" yamllint
+      code: pip install "ansible<2" yamllint tox
     - script:
       name: Validate YAML
       code: yamllint .
@@ -47,12 +47,29 @@ build:
       name: Install ansible galaxy requirements
       code: ansible-galaxy install -r ansible-role-requirements.yml
     - script:
+      name: Populate inventory file
+      code: export ANSIBLE_INVENTORY=${INVENTORY:-inventory_localhost}
+    - script:
       name: Syntax check ansible playbook
-      code: ansible-playbook --syntax-check -i inventory_localhost deploy.yml
+      code: ansible-playbook --syntax-check -i $ANSIBLE_INVENTORY deploy.yml
     - script:
       name: Run playbook
-      code: ansible-playbook -i inventory_localhost deploy.yml
+      code: ansible-playbook -i $ANSIBLE_INVENTORY deploy.yml
     - script:
       name: Attempt to curl the keystone endpoint
       # at least make sure the keystone service is running
       code: curl http://localhost:5000/
+    - script:
+      name: Setup integration testing requirements
+      code: |
+        cd /pipeline/source/
+        ansible-playbook -i $ANSIBLE_INVENTORY setup_integration_test_host.yml
+    - script:
+      name: Get the latest capstone source
+      code: |
+        git clone https://github.com/rackerlabs/capstone.git /pipeline/capstone
+    - script:
+      name: Run capstone integration tests
+      code: |
+        cd /pipeline/capstone
+        tox -e integration
