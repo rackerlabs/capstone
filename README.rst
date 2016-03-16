@@ -251,6 +251,29 @@ This account is provided by Rackspace. Once the ``capstone.conf`` and
 
     ansible-playbook -i inventory deploy.yml
 
+Building
+~~~~~~~~
+
+Capstone uses very basic versioning. The following is an example of a capstone
+build::
+
+    capstone-01+be7bcf8.tar.gz
+
+The SHA of the build ``be7bcf8`` is appended to be end of the version. A
+specific version of capstone can be built by using the ``setup.py`` script.
+Note that is it required to manually create a lightweight 0.1 tag. The tag will
+only need to be created once, before you build capstone. This will be a manual
+process until capstone is tagged properly upstream. The ``git tag`` command
+will tag capstone at it's first commit::
+
+    git tag 0.1 7fa2726
+    git checkout be7bcf8
+    python setup.py sdist
+
+The resulting build will live under the ``capstone/dist/``. Note that ``pip``
+will only recognize capstone as being version ``0.1``, regardless of the commit
+that was used in the build.
+
 Contributing
 ------------
 
