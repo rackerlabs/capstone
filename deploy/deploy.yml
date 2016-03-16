@@ -41,6 +41,13 @@
         owner: keystone
       tags:
         - capstone
+    - name: Drop keystone logging config
+      template:
+        src: templates/logging.conf
+        dest: /etc/keystone/logging.conf
+        owner: keystone
+      tags:
+        - capstone
     - name: Restart apache
       service:
         name: "apache2"
@@ -62,6 +69,8 @@
     keystone_rabbitmq_password: none
     galera_client_drop_config_file: false
     keystone_keystone_conf_overrides:
+      DEFAULT:
+        log_config_append: /etc/keystone/logging.conf
       auth:
         method: password
         password: capstone
