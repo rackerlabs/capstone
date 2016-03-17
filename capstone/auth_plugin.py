@@ -70,8 +70,19 @@ class RackspaceIdentity(object):
     def get_token_url(self):
         return conf.rackspace_base_url + '/tokens/'
 
-    def _assert_user_domain(self, user_id):
+    def _assert_user_domain(self, token_data):
+        user_id = token_data['access']['user']['id']
         user_domain = self._user_domain_id or self._user_domain_name
+
+        # If the domain from the scope appears in the list of roles (as a
+        # project id) then it is safe to assume they are indeed a member of
+        # that domain.
+        sentinal = object()
+        tenants = (role.get('tenantId', sentinal)
+                   for role in token_data['access']['user']['roles'])
+        if self._user_domain_id in tenants:
+            return  # shortcut for the common case
+
         admin_client = RackspaceIdentity.from_admin_config()
         admin_client.authenticate()
         if not self._user_ref:
@@ -137,7 +148,7 @@ class RackspaceIdentity(object):
         token_data = resp.json()
 
         if self._user_domain_id or self._user_domain_name:
-            self._assert_user_domain(token_data['access']['user']['id'])
+            self._assert_user_domain(token_data)
 
         if self._scope_domain_id:
             self._assert_domain_scope(token_data)
