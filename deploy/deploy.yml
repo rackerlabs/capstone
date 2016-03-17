@@ -5,12 +5,20 @@
   roles:
     - os_keystone
   post_tasks:
+    - name: Install capstone from pypi
+      pip:
+        extra_args: "-i {{ pypi_server }}"
+        version: "{{ capstone_version }}"
+      when: (pypi_server is defined and capstone_version is defined)
+      tags:
+        - capstone
     - name: Install capstone from source
       pip:
         name: "git+https://github.com/rackerlabs/capstone#egg=capstone"
         virtualenv: "{{ keystone_venv_bin | dirname }}"
         virtualenv_site_packages: "no"
         extra_args: "{{ pip_install_options|default('') }}"
+      when: (pypi_server is undefined and capstone_version is undefined)
       tags:
         - capstone
     - name: Create capstone dir
