@@ -18,7 +18,7 @@ import hashlib
 from keystone.auth import controllers
 from keystone.common import utils
 from keystone import exception
-from keystone.i18n import _
+from keystone.i18n import _, _LI  # noqa
 from keystone.token import provider
 from keystone.token.providers import common
 from oslo_log import log
@@ -139,6 +139,8 @@ class RackspaceTokenDataHelper(object):
                        trust=None, token=None, include_catalog=True,
                        bind=None, access_token=None, issued_at=None,
                        audit_info=None):
+        username = self._token_data['access']['user']['name']
+        LOG.info(_LI('Building token data for user %s.'), username)
         token_data = {
             'methods': method_names,
             const.TOKEN_RESPONSE: self._token_data,
@@ -162,6 +164,7 @@ class RackspaceTokenDataHelper(object):
         # Remove Rackspace's response from token data
         del token_data['rackspace:token_response']
 
+        LOG.info(_LI('Successfully built token data for user %s.'), username)
         return {'token': token_data}
 
 
@@ -187,6 +190,7 @@ class Provider(common.BaseProvider):
                        project_id=None, domain_id=None, auth_context=None,
                        trust=None, metadata_ref=None, include_catalog=True,
                        parent_audit_id=None):
+        LOG.info(_LI('Issuing token for user %s.'), user_id)
         expires_at = (
             auth_context[const.TOKEN_RESPONSE]['access']['token']['expires'])
         self.v3_token_data_helper = RackspaceTokenDataHelper(

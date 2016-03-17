@@ -12,11 +12,15 @@
 
 from keystone import auth
 from keystone import exception
+from keystone.i18n import _LI
+from oslo_log import log
 import requests
 
 from capstone import conf
 from capstone import const
 
+
+LOG = log.getLogger(__name__)
 
 METHOD_NAME = 'password'
 
@@ -72,15 +76,25 @@ class RackspaceIdentity(object):
 
     def _assert_user_domain(self, user_id):
         user_domain = self._user_domain_id or self._user_domain_name
+        LOG.info(_LI('Assert user %(u_name)s belongs to domain %(d_id)s.'),
+                 {'u_name': self._username, 'd_id': user_domain})
+
         admin_client = RackspaceIdentity.from_admin_config()
         admin_client.authenticate()
         if not self._user_ref:
             self._user_ref = admin_client.get_user(user_id)
 
-        if not self._user_ref[const.RACKSPACE_DOMAIN_KEY] == user_domain:
-            raise exception.Unauthorized()
+        user_ref_domain = self._user_ref[const.RACKSPACE_DOMAIN_KEY]
+        if not user_ref_domain == user_domain:
+            msg = (_LI('User %(u_name)s does not belong to domain %(d_id)s.') %
+                   {'u_name': self._username, 'd_id': user_ref_domain})
+            LOG.info(msg)
+            raise exception.Unauthorized(msg)
 
     def _assert_domain_scope(self, user_id):
+        LOG.info(_LI('Assert user %(u_name)s can scope to domain %(d_id)s.'),
+                 {'u_name': self._username, 'd_id': self._scope_domain_id})
+
         # TODO(dstanek): if this will be truly the same as
         # _assert_user_domain then i'll combine the two as _assert_domain
         admin_client = RackspaceIdentity.from_admin_config()
@@ -90,14 +104,22 @@ class RackspaceIdentity(object):
 
         user_domain = self._user_ref[const.RACKSPACE_DOMAIN_KEY]
         if not user_domain == self._scope_domain_id:
-            raise exception.Unauthorized()
+            msg = (_LI('User %(u_name)s cannot scope to domain %(d_id)s.') %
+                   {'u_name': self._username, 'd_id': self._scope_domain_id})
+            LOG.info(msg)
+            raise exception.Unauthorized(msg)
 
     def _assert_project_scope(self, token_data):
+        LOG.info(_LI('Assert user %(u_name)s can scope to project %(p_id)s.'),
+                 {'u_name': self._username, 'p_id': self._scope_project_id})
         sentinal = object()
         tenants = (role.get('tenantId', sentinal)
                    for role in token_data['access']['user']['roles'])
         if self._scope_project_id not in tenants:
-            raise exception.Unauthorized()
+            msg = (_LI('User %(u_name)s cannot scope to project %(p_id)s.') %
+                   {'u_name': self._username, 'p_id': self._scope_project_id})
+            LOG.info(msg)
+            raise exception.Unauthorized(msg)
 
     def get_user(self, user_id):
         token_data = self.authenticate()
@@ -110,6 +132,8 @@ class RackspaceIdentity(object):
         return resp.json()['user']
 
     def authenticate(self):
+        LOG.info(_LI('Authenticate user %s against Rackspace\'s Identity '
+                     'system.'), self._username)
         data = {
             "auth": {
                 "passwordCredentials": {
@@ -134,6 +158,8 @@ class RackspaceIdentity(object):
         if self._scope_project_id:
             self._assert_project_scope(token_data)
 
+        LOG.info(_LI('Successfully authenticated user %s against Rackspace\'s '
+                     'Identity system.'), self._username)
         return token_data
 
 
