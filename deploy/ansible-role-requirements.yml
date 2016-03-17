@@ -26,6 +26,6 @@
   scm: git
   version: master
 - name: os_keystone
-  src: https://github.com/os-cloud/openstack-ansible-os_keystone
+  src: https://github.com/openstack/openstack-ansible-os_keystone
   scm: git
   version: master
