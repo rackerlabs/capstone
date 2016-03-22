@@ -146,6 +146,18 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
         self.assertTokenIsUseable(token)
         self.assertValidTokenResponse(resp)
 
+    def test_with_incorrect_username_and_domain_id(self):
+        data = generate_password_auth_data({
+            "name": uuid.uuid4().hex,
+            "password": self.password,
+            "domain": {"id": self.domain_id},
+        })
+        e = self.assertRaises(
+            requests.exceptions.HTTPError,
+            self.authenticate,
+            data)
+        self.assertAuthFailed(e)
+
     def test_with_username_and_incorrect_domain_id(self):
         data = generate_password_auth_data({
             "name": self.username,
@@ -190,6 +202,17 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
         token = resp.headers['X-Subject-Token']
         self.assertTokenIsUseable(token)
         self.assertValidTokenResponse(resp)
+
+    def test_with_incorrect_user_id(self):
+        data = generate_password_auth_data({
+            "id": uuid.uuid4().hex,
+            "password": self.password,
+        })
+        e = self.assertRaises(
+            requests.exceptions.HTTPError,
+            self.authenticate,
+            data)
+        self.assertAuthFailed(e)
 
     def test_with_user_id_and_domain_id(self):
         data = generate_password_auth_data({
