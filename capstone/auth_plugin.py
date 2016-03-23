@@ -84,7 +84,7 @@ class RackspaceIdentity(object):
         user_ref_domain = self._user_ref[const.RACKSPACE_DOMAIN_KEY]
         if not user_ref_domain == user_domain:
             msg = (_LI('User %(u_name)s does not belong to domain %(d_id)s.') %
-                   {'u_name': self._username, 'd_id': user_ref_domain})
+                   {'u_name': self._username, 'd_id': user_domain})
             LOG.info(msg)
             raise exception.Unauthorized(msg)
         LOG.info(_LI('User %(u_name)s belongs to domain %(d_id)s.'),
