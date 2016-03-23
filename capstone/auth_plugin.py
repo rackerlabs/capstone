@@ -74,26 +74,29 @@ class RackspaceIdentity(object):
     def get_token_url(self):
         return conf.rackspace_base_url + '/tokens/'
 
-    def _assert_user_domain(self, token_data):
-        user_id = token_data['access']['user']['id']
-        user_domain = self._user_domain_id or self._user_domain_name
-
-        # If the domain from the scope appears in the list of roles (as a
-        # project id) then it is safe to assume they are indeed a member of
-        # that domain.
+    def _is_in_domain(self, domain, token_data):
+        # If the required domain appears in the list of roles (as a project
+        # id) then it is safe to assume they are indeed a member of that
+        # domain.
         sentinal = object()
         tenants = (role.get('tenantId', sentinal)
                    for role in token_data['access']['user']['roles'])
-        if user_domain in tenants:
-            return  # shortcut for the common case
+        if domain in tenants:
+            return True  # shortcut for the common case
 
-        admin_client = RackspaceIdentity.from_admin_config()
-        admin_client.authenticate()
         if not self._user_ref:
+            admin_client = RackspaceIdentity.from_admin_config()
+            admin_client.authenticate()
+            user_id = token_data['access']['user']['id']
             self._user_ref = admin_client.get_user(user_id)
 
         user_ref_domain = self._user_ref[const.RACKSPACE_DOMAIN_KEY]
-        if not user_ref_domain == user_domain:
+        if not user_ref_domain == domain:
+            return False
+        return True
+
+    def _assert_user_domain(self, token_data):
+        if not self._is_in_domain(user_domain, token_data):
             msg = (_LI('User %(u_name)s does not belong to domain %(d_id)s.') %
                    {'u_name': self._username, 'd_id': user_domain})
             LOG.info(msg)
@@ -102,26 +105,7 @@ class RackspaceIdentity(object):
                  {'u_name': self._username, 'd_id': user_domain})
 
     def _assert_domain_scope(self, token_data):
-        user_id = token_data['access']['user']['id']
-
-        # If the domain from the scope appears in the list of roles (as a
-        # project id) then it is safe to assume they are indeed a member of
-        # that domain.
-        sentinal = object()
-        tenants = (role.get('tenantId', sentinal)
-                   for role in token_data['access']['user']['roles'])
-        if self._scope_domain_id in tenants:
-            return  # shortcut for the common case
-
-        # TODO(dstanek): if this will be truly the same as
-        # _assert_user_domain then i'll combine the two as _assert_domain
-        admin_client = RackspaceIdentity.from_admin_config()
-        admin_client.authenticate()
-        if not self._user_ref:
-            self._user_ref = admin_client.get_user(user_id)
-
-        scope_domain = self._user_ref[const.RACKSPACE_DOMAIN_KEY]
-        if not scope_domain == self._scope_domain_id:
+        if not self._is_in_domain(self._scope_domain_id, token_data):
             msg = (_LI('User %(u_name)s cannot scope to domain %(d_id)s.') %
                    {'u_name': self._username, 'd_id': self._scope_domain_id})
             LOG.info(msg)
