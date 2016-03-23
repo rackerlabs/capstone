@@ -16,6 +16,7 @@ from keystone.i18n import _LI
 from oslo_log import log
 import requests
 
+from capstone import cache
 from capstone import conf
 from capstone import const
 
@@ -68,6 +69,7 @@ class RackspaceIdentity(object):
         self._scope_project_id = scope_project_id
         self._user_ref = user_ref
 
+    @cache.memoize
     def get_user_url(self, user_id):
         return '%s/users/%s' % (conf.rackspace_base_url, user_id)
 
