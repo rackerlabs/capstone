@@ -10,5 +10,7 @@ service_user_account_number = admin
 capstone_auth_url = http://localhost:5000/v3/
 
 # Used for deploying specific build versions from a pypi server
-# capstone_version = capstone-0.1+9e57f73.tar.gz
-# pypi_server = http://localhost/web/packages/
+# capstone_version = capstone-9e57f73
+# venv_location = http://localhost/
+# pypi_server = https://pypi.python.org/simple/
+# trusted_pypi = https://pypi.python.org

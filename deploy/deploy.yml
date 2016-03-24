@@ -5,26 +5,13 @@
   roles:
     - os_keystone
   post_tasks:
-    - name: Get capstone build
-      get_url:
-        url: "{{ pypi_server }}/{{ capstone_version }}"
-        dest: "/tmp/{{ capstone_version }}"
-      when: (pypi_server is defined and capstone_version is defined)
-      tags:
-        - capstone
-    - name: Install capstone from tarball
-      pip:
-        name: "/tmp/{{ capstone_version }}"
-      when: (capstone_version is defined)
-      tags:
-        - capstone
     - name: Install capstone from source
       pip:
         name: "git+https://github.com/rackerlabs/capstone#egg=capstone"
         virtualenv: "{{ keystone_venv_bin | dirname }}"
         virtualenv_site_packages: "no"
         extra_args: "{{ pip_install_options|default('') }}"
-      when: (pypi_server is undefined and capstone_version is undefined)
+      when: (venv_location is undefined and capstone_version is undefined)
       tags:
         - capstone
     - name: Create capstone dir
@@ -54,10 +41,11 @@
         state: "restarted"
         pattern: "apache2"
   vars:
-    keystone_venv_tag: "capstone-testing"
-    keystone_venv_bin: "/openstack/venvs/keystone-{{ keystone_venv_tag }}/bin"
+    keystone_venv_tag: "{{ capstone_version }}"
+    keystone_venv_bin: "/openstack/venvs/keystone-{{ capstone_version }}/bin"
+    keystone_venv_download_url: "{{ venv_location }}/{{ capstone_version }}.tgz"
     keystone_git_install_branch: stable/liberty
-    keystone_developer_mode: true
+    keystone_developer_mode: false
     keystone_database_enabled: false
     keystone_service_setup: false
     keystone_token_provider: capstone
@@ -68,26 +56,24 @@
     keystone_auth_admin_token: none
     keystone_rabbitmq_password: none
     galera_client_drop_config_file: false
+    pip_upstream_url: "{{ pip_url|default('https://bootstrap.pypa.io/get-pip.py') }}"
     keystone_keystone_conf_overrides:
       DEFAULT:
         log_config_append: /etc/keystone/logging.conf
       auth:
         method: password
         password: capstone
-    # NOTE(lbragstad): We don't require all the pip packages that are included
-    # in the upstream os_keystone keystone_pip_packages list. Examples of these
-    # would be ldappool, lxml, PyMySQL, pysaml2, and python-ldap. Let's
-    # override keystone_pip_packages here so that we don't install pip packages
-    # we don't need.
-    keystone_pip_packages:
-      - argparse
-      - keystone
-      - keystonemiddleware
-      - oslo.log
-      - oslo.middleware
-      - pbr
-      - pycrypto
-      - python-keystoneclient
-      - python-memcached
-      - python-openstackclient
-      - repoze.lru
+    keystone_requires_pip_packages:
+      - virtualenv-tools
+      - httplib2
+    pip_global_conf_overrides:
+      global:
+        index-url: "{{ pypi_server|default('https://pypi.python.org/simple/') }}"
+        find-links: "{{ pypi_server|default('https://pypi.python.org/simple/') }}"
+        trusted-host: "{{ trusted_pypi|default('https://pypi.python.org/simple/') }}"
+        no-index: false
+        allow-all-external: true
+        no-allow-insecure: false
+    pip_links:
+      - name: internal
+        link: "{{ pypi_server|default('https://pypi.python.org/simple/') }}"
