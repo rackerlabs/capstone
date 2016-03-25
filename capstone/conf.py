@@ -33,6 +33,17 @@ CONF.register_opt(
     cfg.StrOpt('project_id',
                help='Project ID for the Identity service admin.'),
     group='service_admin')
+CONF.register_opt(
+    cfg.BoolOpt('caching', default=True,
+                help='Toggle for capstone caching. This has no '
+                      'effect unless global caching is enabled.'),
+    group='capstone')
+CONF.register_opt(
+    cfg.IntOpt('cache_time', default=600,
+               help='Time to cache capstone data (in seconds). This has '
+                    'no effect unless global and capstone caching are '
+                    'enabled.'),
+    group='capstone')
 
 possible_config_files = [
     '/etc/capstone/capstone.conf',
