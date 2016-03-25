@@ -12,14 +12,37 @@
 
 import os
 
-from six.moves import configparser
+from oslo_config import cfg
 
 
-_config = configparser.ConfigParser()
-_config.read(['/etc/capstone/capstone.conf',
-              os.environ.get('CAPSTONE_CONFIG', '')])
+CONF = cfg.CONF
+CONF.register_opt(
+    cfg.StrOpt('base_url',
+               help='Base URL to be used to build v2 Identity URLs.'),
+    group='rackspace')
+CONF.register_opt(
+    cfg.StrOpt('username',
+               help='Username for the Identity service admin.'),
+    group='service_admin')
+CONF.register_opt(
+    cfg.StrOpt('password', secret=True,
+               help='Password for the Identity service admin.'),
+    group='service_admin')
+CONF.register_opt(
+    cfg.StrOpt('project_id',
+               help='Project ID for the Identity service admin.'),
+    group='service_admin')
 
-admin_username = _config.get('service_admin', 'username')
-admin_password = _config.get('service_admin', 'password')
-admin_project_id = _config.get('service_admin', 'project_id')
-rackspace_base_url = _config.get('rackspace', 'base_url').rstrip('/')
+possible_config_files = [
+    '/etc/capstone/capstone.conf',
+    os.environ.get('CAPSTONE_CONFIG', ''),
+]
+possible_config_files = [c for c in possible_config_files
+                         if os.path.isfile(c)]
+CONF.default_config_files.extend(possible_config_files)
+CONF._parse_config_files()
+
+admin_username = CONF.service_admin.username
+admin_password = CONF.service_admin.password
+admin_project_id = CONF.service_admin.project_id
+rackspace_base_url = CONF.rackspace.base_url.rstrip('/')
