@@ -126,7 +126,15 @@ class RackspaceIdentity(object):
         headers = const.HEADERS.copy()
         headers['X-Auth-Token'] = admin_token
         resp = requests.get(self.get_user_url(user_id), headers=headers)
-        resp.raise_for_status()
+        if resp.status_code != requests.codes.ok:
+            if resp.status_code == requests.codes.not_found:
+                msg = resp.json()['itemNotFound']['message']
+            else:
+                msg = resp.text
+            LOG.info(msg)
+            raise exception.Unauthorized(msg)
+        LOG.info(_LI('Found user %s in Rackspace\'s Identity system.'),
+                 user_id)
         return resp.json()['user']
 
     def authenticate(self):
