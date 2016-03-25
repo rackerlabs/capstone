@@ -16,6 +16,7 @@ from keystone.i18n import _LI
 from oslo_log import log
 import requests
 
+from capstone import cache
 from capstone import conf
 from capstone import const
 
@@ -126,6 +127,7 @@ class RackspaceIdentity(object):
         LOG.info(_LI('User %(u_name)s can scope to project %(p_id)s.'),
                  {'u_name': self._username, 'p_id': self._scope_project_id})
 
+    @cache.memoize
     def get_user(self, user_id):
         token_data = self.authenticate()
         admin_token = token_data['access']['token']['id']
@@ -136,14 +138,16 @@ class RackspaceIdentity(object):
         resp.raise_for_status()
         return resp.json()['user']
 
-    def authenticate(self):
+    @cache.memoize
+    def _authenticate(self, username, password):
+
         LOG.info(_LI('Authenticating user %s against Rackspace\'s Identity '
-                     'system.'), self._username)
+                     'system.'), username)
         data = {
             "auth": {
                 "passwordCredentials": {
-                    "username": self._username,
-                    "password": self._password,
+                    "username": username,
+                    "password": password,
                 },
             },
         }
@@ -164,8 +168,11 @@ class RackspaceIdentity(object):
             self._assert_project_scope(token_data)
 
         LOG.info(_LI('Successfully authenticated user %s against Rackspace\'s '
-                     'Identity system.'), self._username)
+                     'Identity system.'), username)
         return token_data
+
+    def authenticate(self):
+        return self._authenticate(self._username, self._password)
 
 
 class Password(auth.AuthMethodHandler):
