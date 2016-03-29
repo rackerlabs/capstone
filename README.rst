@@ -219,6 +219,16 @@ With a local `docker server <https://www.docker.com/>`_ and the `wercker CLI
 
     wercker build
 
+Cache invalidator
+~~~~~~~~~~~~~~~~
+
+Cache invalidator invalidates capstone's cache by reading Rackspace Identity
+events feeds.
+
+Capstone will build a console script to start the process::
+
+    capstone-cache-invalidator
+
 Deployment
 ----------
 
@@ -243,7 +253,11 @@ The playbook will also expect us to provide a ``capstone.conf``::
     username = <username>
     password = <password>
     project_id = <project_id>
-    rackspace_base_url = <rackspace_api_endpoint>
+
+    [rackspace]
+    base_url = <rackspace_api_endpoint>
+    feed_url = <rackspace_feed_endpoint>
+    polling_period = <feed_polling_period>
 
 This account is provided by Rackspace. Once the ``capstone.conf`` and
 ``inventory`` files are in place we're ready to deploy::
