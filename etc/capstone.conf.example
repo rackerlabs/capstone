@@ -1,6 +1,8 @@
 [rackspace]
 base_url = rackspace_base_url  # e.g. https://..../v2.0
-
+feed_url = identity_feed_url # e.g. https://..../events
+# Polling period in seconds to request new feeds events
+polling_period = 60
 [service_admin]
 username = username_here
 password = password_here
