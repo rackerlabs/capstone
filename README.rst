@@ -136,8 +136,47 @@ v3 ⟷ v2 attribute mapping
 Testing
 -------
 
+Latest Build Results
+~~~~~~~~~~~~~~~~~~~~
+
 .. image:: https://app.wercker.com/status/409d943a74ce1d67a566d80ecbacd5fd/s/master
    :target: https://app.wercker.com/#applications/56bd3ba8239090c836084417
+
+Definitions
+~~~~~~~~~~~
+
+Unit
+  Tests which are focused on internal methods, functions or classes.
+
+Functional
+  Tests that cover user (including super type users) accessible
+  APIs in business level scenarios.
+
+API
+  Tests that focus on a single API (as much as possible).
+
+Performance
+  Tests that measure throughput and response time for a mixture
+  of calls that approximates production usage, adjusted for the environment
+  under test.
+
+Integration
+  Developer tests that emphasize testing multiple systems.
+
+Model based
+  Tests that emphasizes an ASM or FSM approach to modeling the
+  system(s) under test.
+
+Stress
+  Testing at (progessively) higher levels of load in order to
+  determine breaking points.
+
+Reliability
+  Testing to determine mean time between failures.
+
+System tests
+  Similar to Dev Integration tests, but tend to be more from a black box
+  perspective.
 
 Unit tests
 ~~~~~~~~~~
@@ -210,6 +249,206 @@ Or any python test runner::
 
     python -m unittest \
         capstone.tests.integration.test_integration.IntegrationTests
+
+API
+~~~
+
+These will be mostly the DefCore tempest tests and other API tests.
+
+Performance
+~~~~~~~~~~~
+
+We will run the standard Rackspace Identity mix with an additional 10/100 RPS
+for Capstone. Rackspace Identity has a large amount of repeated calls, which is
+important since Capstone will cache authentication calls to v2. It is
+important to reflect that in the mix of users to Capstone authentication.
+
+Model Based
+~~~~~~~~~~~
+
+We will be using model based tests to supplment, where time permits, the
+integration tests. These tests will focus on switching between authentication
+tokens issued through Capstone and directly through v2 with other v2 methods.
+These will have lower priority than other testing.
+
+Stress and Reliability
+~~~~~~~~~~~~~~~~~~~~~~
+
+We do not have a dedicated performance testing environment, so we will not be
+able to perform stress or reliability testing.
+
+System Testing
+~~~~~~~~~~~~~~
+
+System testing will focus on the following identified risk areas. Likely it
+will be a combination of Model Based Tests and tests using the system test
+framework for v2.
+
+Risk Areas
+..........
+
+- Token compatibility
+
+- Service catalog
+
+- Caching mechanism
+
+- Role Based Access Control
+
+- Keystone specific authentication mechanisms
+
+- Identity specific authentication mechanisms (MFA, Fed.)
+
+- Repose V3 compatibility
+
+Token Compatibility
+###################
+
+For the initial release, we only need to be concerned with v3 tokens used in
+v2, since v3 will only support non-token related authentication. This area is
+already covered partially by integration tests. Some
+additional coverage is needed to do basic checks against a few other v2 APIs.
+Those can be done as part of Role Based Access Control testing.
+
+Service Catalog
+###############
+
+A user should be created through the v2 vanilla create user (i.e. without a
+numeric domain.) and one with the "one create user call", which is the identity
+create user call, but with some added magic to automatically add support for
+Cloud Compute and Storage. The service catalog for both user creation calls
+should be highly similar to the Rackspace v2 create user call.
+
+Caching Mechanism
+#################
+
+Capstone uses a caching mechanism. Some testing will need to
+be done to verify correct behavior for dirty (invalid) caches. Special
+attention should be made to token revocations, user updates, implicit token
+revocations (changing a password, enabling multifactor authentication.)
+
+Role Based Access Control
+#########################
+
+This testing is concerned with different Identity role based access control
+rules. Testing doesn't need to be
+exhaustive, but a couple of different test cases around each type of rule
+should be sufficient.
+
+- user admin in same domain
+
+- user admin in different domain
+
+- non user admin in same domain
+
+- non user admin in different domain
+
+- identity admin
+
+- identity service admin
+
+Keystone specific authentication mechanisms
+###########################################
+
+These are covered under api and integration testing. Some additional basic
+ad hoc testing should be performed.
+
+Identity specific authantication mechanisms
+###########################################
+
+MFA authentication should yield a reasonable error message in keystone.
+Similar to attempting to use v3 federated authentication.
+
+Repose V3 compatibility
+#######################
+
+It's not clear yet if this will be in scope for testing.
+
+
+System Test Case List
+.....................
+
+Token Compatibility
+###################
+
+Currently Covered
++++++++++++++++++
+
+- V3 token, V2 validate
+- V2 token, V3 validate
+
+To be added
++++++++++++
+
+- V2 token, rescoping that token with V3 token authentication, with variations
+  for scoping to project and domain.
+
+- V2 multifactor authentication token, V3 token auth
+
+- V2 federated token, V3 token auth
+
+- verify auth by is returned correctly.
+
+- expired tokens
+
+- V2 multifactor authentication scoped token in V3 auth
+
+- V2 password reset token in V3 auth
+
+- V3 token used for impersonation in V2
+
+- V2 impersonation token should either be rejected in V3 or the
+  impersonation bits should be ignored (security risk we should test for:
+  you should not be able to get a real V3 token given a V2 impersonation token.)
+
+- V3 authenticate for user with mfa enabled
+
+- V3 auth, V2 revoke
+
+- V2 auth, V3 revoke ( 'revoke' not supported yet.)
+
+- V3 auth, then v2 get role, get tenant should return same results as
+  V2 auth then get role, get tenant, respectively.
+
+Policy
+######
+
+Verify V3 methods are included/excluded according to the policy.
+
+Service Catalog
+###############
+
+- item by item comparison for:
+
+  - nast and mosso, this is the Identity "one create user call".
+
+  - default region, this is the create user call with a non-numeric domain.
+
+
+Caching
+#######
+
+- V3 authenticate, V2 remove mosso tenant, V3 should show updated service
+  catalog.
+
+- V3 authenticate, V2 revoke, V3 token auth should fail.
+
+- V3 authenticate, V2 password update, V3 token should be revoked.
+
+- V3 authenticate, V2 enable mfa, V3 token should be revoked.
+
+- others indirect revokes: disable user, disable domain, maybe pick a couple.
+
+- V3 authenticate, V2 remove tenant, V3 tenant scoped authentication should
+  fail.
+
+- V3 authentication, V2 user disable (token should be revoked).
+
+Role Based Access Control
+#########################
+
+V3 token scoped to a domain A, can't call add role to user (example) for
+user in domain B.
 
 Continuous integration
 ~~~~~~~~~~~~~~~~~~~~~~
