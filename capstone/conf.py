@@ -21,6 +21,14 @@ CONF.register_opt(
                help='Base URL to be used to build v2 Identity URLs.'),
     group='rackspace')
 CONF.register_opt(
+    cfg.StrOpt('feed_url',
+               help='URL used for reading identity feed events.'),
+    group='rackspace')
+CONF.register_opt(
+    cfg.StrOpt('polling_period',
+               help='Polling period in seconds to read identity feed events.'),
+    group='rackspace')
+CONF.register_opt(
     cfg.StrOpt('username',
                help='Username for the Identity service admin.'),
     group='service_admin')
@@ -44,3 +52,5 @@ admin_username = CONF.service_admin.username
 admin_password = CONF.service_admin.password
 admin_project_id = CONF.service_admin.project_id
 rackspace_base_url = CONF.rackspace.base_url.rstrip('/')
+rackspace_feed_url = CONF.rackspace.feed_url.rstrip('/')
+polling_period = CONF.rackspace.polling_period
