@@ -70,6 +70,9 @@ setuptools.setup(
         'keystone.token.provider': [
             'capstone = capstone.token_provider:Provider',
         ],
+        'capstone.cache_invalidator': [
+            'capstone = capstone.cache_invalidator:main'
+        ],
     },
     install_requires=read_requirements('requirements.txt')
 )
