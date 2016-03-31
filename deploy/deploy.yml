@@ -45,6 +45,10 @@
       template:
         src: templates/logging.conf
         dest: /etc/keystone/logging.conf
+    - name: Drop keystone policy config
+      template:
+        src: templates/policy.json
+        dest: /etc/keystone/policy.json
         owner: keystone
       tags:
         - capstone
