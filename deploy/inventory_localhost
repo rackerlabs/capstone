@@ -5,6 +5,7 @@ localhost ansible_connection=local
 service_user_name = admin
 service_user_id = admin
 service_user_domain_id = admin
+service_user_role_id = admin
 service_user_password = secrete
 service_user_account_number = admin
 capstone_auth_url = http://localhost:5000/v3/
