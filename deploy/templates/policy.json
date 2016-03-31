@@ -1,0 +1,11 @@
+{
+    "admin_required": "role:{{ service_user_role_id }}",
+    "owner" : "user_id:%(user_id)s",
+    "admin_or_owner": "rule:admin_required or rule:owner",
+
+    "default": "!",
+
+    "identity:check_token": "rule:admin_or_owner",
+    "identity:validate_token": "rule:admin_required",
+    "identity:validate_token_head": "rule:admin_required"
+}
