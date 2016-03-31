@@ -54,6 +54,10 @@ class BaseIntegrationTests(testtools.TestCase):
         self.keystone_token_endpoint = (
             keystone_args['auth_url'].rstrip('/') + '/auth/tokens'
         )
+        self.keystone_users_endpoint = (
+            keystone_args['auth_url'].rstrip('/') + '/users'
+        )
+
 
     def assertTokenIsUseable(self, token_id):
         """Self validate token against the Rackspace v2.0 API."""
@@ -91,6 +95,13 @@ class BaseIntegrationTests(testtools.TestCase):
     def authenticate(self, auth_data):
         resp = requests.post(
             self.keystone_token_endpoint, headers=self.headers, json=auth_data)
+        resp.raise_for_status()
+        return resp
+
+    def list_users(self):
+        resp = requests.get(
+            self.keystone_users_endpoint, headers=self.headers)
+
         resp.raise_for_status()
         return resp
 
@@ -355,3 +366,24 @@ class TestGettingADomainScopedToken(BaseIntegrationTests):
             self.authenticate,
             data)
         self.assertAuthFailed(e)
+
+
+class TestCapstonePolicy(BaseIntegrationTests):
+
+    def test_list_users_returns_unauthoorized(self):
+        data = generate_password_auth_data_with_scope(
+            user={
+                "name": self.username,
+                "password": self.password,
+                "domain": {"id": self.domain_id},
+            },
+            scope={
+                "project": {
+                    "id": self.project_id,
+                    "domain": {"id": uuid.uuid4().hex},
+                }
+            })
+        resp = self.authenticate(data)
+        self.headers['X-Auth-Token'] = resp.headers['X-Subject-Token']
+
+        resp = self.list_users()

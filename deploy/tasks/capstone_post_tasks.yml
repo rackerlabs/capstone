@@ -22,6 +22,14 @@
   tags:
     - capstone
     - config
+- name: Drop keystone policy config
+  template:
+    src: templates/policy.json
+    dest: /etc/capstone/policy.json
+    owner: keystone
+  tags:
+    - capstone
+    - config
 - name: Restart apache
   service:
     name: "apache2"
