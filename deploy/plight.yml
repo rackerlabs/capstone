@@ -1,0 +1,14 @@
+---
+
+- name: Manage node availability using plight
+  hosts: keystone_all
+  tasks:
+    - name: Update plight status to offline
+      command: /usr/bin/plight offline
+  tags:
+    - remove
+  tasks:
+    - name: Update plight status to enabled
+      command: /usr/bin/plight enable
+  tags:
+    - add
