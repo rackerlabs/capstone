@@ -289,8 +289,6 @@ Create the docker image and run it with the following commands::
     ./build_docker.sh
     docker-compose up
 
-
-
 Contributing
 ------------
 
