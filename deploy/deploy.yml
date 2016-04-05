@@ -5,6 +5,7 @@
   roles:
     - pip_install
     - os_keystone
+
   post_tasks:
     - name: Add apt key for plight
       apt_key:
@@ -13,6 +14,7 @@
         state: "present"
       tags:
         - capstone
+
     - name: Add plight repository
       apt_repository:
         repo: "{{ plight_repository }}"
@@ -20,15 +22,21 @@
         update_cache: yes
       tags:
         - capstone
-    - name: Install plight
+
+    - name: Install packaged dependencies
       apt:
-        pkg: plight
+        name: "{{ item }}"
         state: installed
         force: yes
+      with_items:
+        - plight
+        - supervisor
       retries: 5
       delay: 2
       tags:
         - capstone
+        - cache-invalidator
+
     - name: Install capstone from source
       pip:
         name: "git+https://github.com/rackerlabs/capstone#egg=capstone"
@@ -36,8 +44,11 @@
         virtualenv_site_packages: "no"
         extra_args: "{{ pip_install_options|default('') }}"
       when: (venv_location is undefined and capstone_version is undefined)
+      register: source_code
       tags:
         - capstone
+        - cache-invalidator
+
     - name: Create capstone dir
       file:
         path: /etc/capstone
@@ -45,6 +56,8 @@
         owner: keystone
       tags:
         - capstone
+        - cache-invalidator
+
     - name: Drop capstone.conf
       template:
         src: templates/etc-capstone.conf
@@ -52,6 +65,8 @@
         owner: keystone
       tags:
         - capstone
+        - cache-invalidator
+
     - name: Drop keystone logging config
       template:
         src: templates/logging.conf
@@ -60,11 +75,37 @@
       tags:
         - capstone
         - config
+
     - name: Restart apache
       service:
         name: "apache2"
         state: "restarted"
         pattern: "apache2"
+
+    - name: Deploy supervisor configuration
+      copy:
+        src: etc/supervisor/conf.d/cache_invalidator.conf
+        dest: /etc/supervisor/conf.d/cache_invalidator.conf
+        owner: root
+        group: root
+      register: supervisor_conf
+      tags:
+        - cache-invalidator
+
+    - name: Ensure supervisor is aware of the cache invalidator
+      supervisorctl:
+        name: cache_invalidator
+        state: present
+      tags:
+        - cache-invalidator
+
+    - name: Restart supervised process
+      supervisorctl:
+        name: cache_invalidator
+        state: restarted
+      when: source_code.changed or supervisor_conf.changed
+      tags:
+        - cache-invalidator
   vars:
     keystone_venv_tag: "{{ capstone_version }}"
     keystone_venv_bin: "/openstack/venvs/keystone-{{ capstone_version }}/bin"
