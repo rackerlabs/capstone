@@ -1,0 +1,5 @@
+---
+
+# This file contains all the variables required to install capstone locally
+# from source.
+keystone_developer_mode: true
