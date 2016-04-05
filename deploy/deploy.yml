@@ -6,71 +6,15 @@
     - pip_install
     - os_keystone
   post_tasks:
-    - name: Add apt key for plight
-      apt_key:
-        id: "{{ plight_hash_id }}"
-        keyserver: "{{ plight_keyserver }}"
-        state: "present"
-      tags:
-        - capstone
-    - name: Add plight repository
-      apt_repository:
-        repo: "{{ plight_repository }}"
-        state: "present"
-        update_cache: yes
-      tags:
-        - capstone
-    - name: Install plight
-      apt:
-        pkg: plight
-        state: installed
-        force: yes
-      retries: 5
-      delay: 2
-      tags:
-        - capstone
-    - name: Install capstone from source
-      pip:
-        name: "git+https://github.com/rackerlabs/capstone#egg=capstone"
-        virtualenv: "{{ keystone_venv_bin | dirname }}"
-        virtualenv_site_packages: "no"
-        extra_args: "{{ pip_install_options|default('') }}"
+    - include: tasks/plight.yml
+    - include: tasks/capstone_local_install.yml
       when: (venv_location is undefined and capstone_version is undefined)
-      tags:
-        - capstone
-    - name: Create capstone dir
-      file:
-        path: /etc/capstone
-        state: directory
-        owner: keystone
-      tags:
-        - capstone
-    - name: Drop capstone.conf
-      template:
-        src: templates/etc-capstone.conf
-        dest: /etc/capstone/capstone.conf
-        owner: keystone
-      tags:
-        - capstone
-    - name: Drop keystone logging config
-      template:
-        src: templates/logging.conf
-        dest: /etc/keystone/logging.conf
-        owner: keystone
-      tags:
-        - capstone
-        - config
-    - name: Restart apache
-      service:
-        name: "apache2"
-        state: "restarted"
-        pattern: "apache2"
+    - include: tasks/capstone_post_install.yml
   vars:
-    keystone_venv_tag: "{{ capstone_version }}"
-    keystone_venv_bin: "/openstack/venvs/keystone-{{ capstone_version }}/bin"
-    keystone_venv_download_url: "{{ venv_location }}/{{ capstone_version }}.tgz"
+    # NOTE(lbragstad): These variables are required regardless if we're
+    # deploying venvs to staging/production or if we're installing from
+    # source locally.
     keystone_git_install_branch: stable/liberty
-    keystone_developer_mode: false
     keystone_database_enabled: false
     keystone_service_setup: false
     keystone_token_provider: capstone
@@ -81,24 +25,9 @@
     keystone_auth_admin_token: none
     keystone_rabbitmq_password: none
     galera_client_drop_config_file: false
-    pip_upstream_url: "{{ pip_url|default('https://bootstrap.pypa.io/get-pip.py') }}"
     keystone_keystone_conf_overrides:
       DEFAULT:
         log_config_append: /etc/keystone/logging.conf
       auth:
         method: password
         password: capstone
-    keystone_requires_pip_packages:
-      - virtualenv-tools
-      - httplib2
-    pip_global_conf_overrides:
-      global:
-        index-url: "{{ pypi_server|default('https://pypi.python.org/simple/') }}"
-        find-links: "{{ pypi_server|default('https://pypi.python.org/simple/') }}"
-        trusted-host: "{{ trusted_pypi|default('https://pypi.python.org/simple/') }}"
-        no-index: false
-        allow-all-external: true
-        no-allow-insecure: false
-    pip_links:
-      - name: internal
-        link: "{{ pypi_server|default('https://pypi.python.org/simple/') }}"
