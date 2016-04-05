@@ -30,8 +30,50 @@
   tags:
     - capstone
     - config
+- name: Drop supervisor configuration
+  copy:
+    src: etc/supervisor/conf.d/cache_invalidator.conf
+    dest: /etc/supervisor/conf.d/cache_invalidator.conf
+    owner: root
+    group: root
+  register: supervisor_conf
+  tags:
+    - capstone
+    - cache-invalidator
+    - config
 - name: Restart apache
   service:
     name: "apache2"
     state: "restarted"
     pattern: "apache2"
+- name: Ensure supervisor is running
+  service:
+    name: supervisor
+    enabled: yes
+    state: started
+  tags:
+    - cache-invalidator
+- name: Ensure supervisor is aware of the cache invalidator
+  supervisorctl:
+    name: cache_invalidator
+    state: present
+  tags:
+    - cache-invalidator
+- name: Always ensure the cache invalidator is started
+  supervisorctl:
+    name: cache_invalidator
+    state: started
+  tags:
+    - cache-invalidator
+    - config
+- name: Restart the cache invalidator if necessary
+  supervisorctl:
+    name: cache_invalidator
+    state: restarted
+  when:
+    - keystone_get_venv.changed
+    - source_code.changed
+    - supervisor_conf.changed
+  tags:
+    - cache-invalidator
+    - config
