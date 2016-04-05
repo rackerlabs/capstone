@@ -6,65 +6,10 @@
     - pip_install
     - os_keystone
   post_tasks:
-    - name: Add apt key for plight
-      apt_key:
-        id: "{{ plight_hash_id }}"
-        keyserver: "{{ plight_keyserver }}"
-        state: "present"
-      tags:
-        - capstone
-    - name: Add plight repository
-      apt_repository:
-        repo: "{{ plight_repository }}"
-        state: "present"
-        update_cache: yes
-      tags:
-        - capstone
-    - name: Install plight
-      apt:
-        pkg: plight
-        state: installed
-        force: yes
-      retries: 5
-      delay: 2
-      tags:
-        - capstone
-    - name: Install capstone from source
-      pip:
-        name: "git+https://github.com/rackerlabs/capstone#egg=capstone"
-        virtualenv: "{{ keystone_venv_bin | dirname }}"
-        virtualenv_site_packages: "no"
-        extra_args: "{{ pip_install_options|default('') }}"
+    - include: tasks/plight.yml
+    - include: tasks/capstone_local_install.yml
       when: (venv_location is undefined and capstone_version is undefined)
-      tags:
-        - capstone
-    - name: Create capstone dir
-      file:
-        path: /etc/capstone
-        state: directory
-        owner: keystone
-      tags:
-        - capstone
-    - name: Drop capstone.conf
-      template:
-        src: templates/etc-capstone.conf
-        dest: /etc/capstone/capstone.conf
-        owner: keystone
-      tags:
-        - capstone
-    - name: Drop keystone logging config
-      template:
-        src: templates/logging.conf
-        dest: /etc/keystone/logging.conf
-        owner: keystone
-      tags:
-        - capstone
-        - config
-    - name: Restart apache
-      service:
-        name: "apache2"
-        state: "restarted"
-        pattern: "apache2"
+    - include: tasks/capstone_post_install.yml
   vars:
     keystone_venv_tag: "{{ capstone_version }}"
     keystone_venv_bin: "/openstack/venvs/keystone-{{ capstone_version }}/bin"
