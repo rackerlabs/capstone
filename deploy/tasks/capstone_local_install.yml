@@ -1,5 +1,17 @@
 ---
 
+- name: Install packaged dependencies
+  apt:
+    name: "{{ item }}"
+    state: installed
+    force: yes
+  with_items:
+    - supervisor
+  retries: 5
+  delay: 2
+  tags:
+    - capstone
+    - cache-invalidator
 - name: Install capstone from source
   pip:
     name: "git+https://github.com/rackerlabs/capstone#egg=capstone"
