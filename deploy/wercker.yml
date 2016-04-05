@@ -18,7 +18,7 @@ dev:
     - internal/shell:
       code: |
         ANSIBLE_INVENTORY=${INVENTORY:-inventory_localhost}
-        ansible-playbook -i $ANSIBLE_INVENTORY deploy.yml
+        ansible-playbook -i $ANSIBLE_INVENTORY deploy.yml -e @local_vars.yml
       reload: true
 
 build:

@@ -1,0 +1,57 @@
+---
+
+# This file contains all the variables to install capstone from a virtualenv.
+# We can do this by installing capstone and it's dependencies into a virtual
+# environment. Once everything is installed, we can tar up the venv and publish
+# it somewhere that is reachable from production and staging. When we give
+# os_keystone the download URL of the virtualenv it will unpack the virtualenv
+# on the target system. This process takes care of installing capstone because
+# it is included in the virtualenv, resulting in no additional plays for
+# installing capstone. Everything leverages os_keystone to install capstone.
+#
+# Each variables in this file should be documented, having a reason why we need
+# it for deploying capstone.
+
+# keystone_venv_tag, keystone_venv_bin: Each virtualenv build with capstone and
+# it's dependencies will have a sha, in the form of capstone-9e57f73. We need
+# these in order to deploy specific version of capstone.
+keystone_venv_tag: "{{ capstone_version }}"
+keystone_venv_bin: "/openstack/venvs/keystone-{{ capstone_version }}/bin"
+
+# keystone_venv_download_url: If installing from venvs, the os_keystone role
+# requires a location to fetch venvs from. This url is built from inventory
+# variables where venv_location is a server dedicated to serving out venvs and
+# capstone_version is the version to deploy.
+# Example: http://build-server.example.com/capstone/venv/capstone-9e57f73.tgz
+keystone_venv_download_url: "{{ venv_location }}/{{ capstone_version }}.tgz"
+
+# keystone_developer_mode: We must set this to false in order to install
+# virtualenvs.
+keystone_developer_mode: false
+
+# keystone_requires_pip_packages: Since we're installing from venv, we don't
+# need to include the full list of python packages required to install kesytone
+# and capstone. We only require virtualenv-tools and httplib2 to fetch the venv
+# and unpack it into the right place on the target system.
+keystone_requires_pip_packages:
+  - virtualenv-tools
+  - httplib2
+
+# pip_upstream_url, pip_global_conf_overrides: We need the ability to override
+# these because we can't assume production and staging environments have access
+# to the outside world. Instead, these should resolve to appropriate internal
+# mirrors.
+pip_upstream_url: >
+  "{{ pip_url|default('https://bootstrap.pypa.io/get-pip.py') }}"
+pip_global_conf_overrides:
+  global:
+    index-url: "{{ pypi_server|default('https://pypi.python.org/simple/') }}"
+    find-links: "{{ pypi_server|default('https://pypi.python.org/simple/') }}"
+    trusted-host: >
+      "{{ trusted_pypi|default('https://pypi.python.org/simple/') }}"
+    no-index: false
+    allow-all-external: true
+    no-allow-insecure: false
+pip_links:
+  - name: internal
+    link: "{{ pypi_server|default('https://pypi.python.org/simple/') }}"
