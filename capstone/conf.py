@@ -36,9 +36,9 @@ CONF.register_opt(
 # $CAPSTONE_CONFIG takes precedence over the default config file.
 config_file = os.environ.get(
     'CAPSTONE_CONFIG', '/etc/capstone/capstone.conf')
-if not os.path.isfile(config_file):
+if os.path.isfile(config_file):
     CONF.default_config_files.append(config_file)
-CONF._parse_config_files()
+    CONF.reload_config_files()
 
 admin_username = CONF.service_admin.username
 admin_password = CONF.service_admin.password
