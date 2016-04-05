@@ -1,0 +1,21 @@
+---
+
+keystone_venv_tag: "{{ capstone_version }}"
+keystone_venv_bin: "/openstack/venvs/keystone-{{ capstone_version }}/bin"
+keystone_venv_download_url: "{{ venv_location }}/{{ capstone_version }}.tgz"
+keystone_developer_mode: false
+keystone_requires_pip_packages:
+  - virtualenv-tools
+  - httplib2
+pip_upstream_url: "{{ pip_url|default('https://bootstrap.pypa.io/get-pip.py') }}"
+pip_global_conf_overrides:
+  global:
+    index-url: "{{ pypi_server|default('https://pypi.python.org/simple/') }}"
+    find-links: "{{ pypi_server|default('https://pypi.python.org/simple/') }}"
+    trusted-host: "{{ trusted_pypi|default('https://pypi.python.org/simple/') }}"
+    no-index: false
+    allow-all-external: true
+    no-allow-insecure: false
+pip_links:
+  - name: internal
+    link: "{{ pypi_server|default('https://pypi.python.org/simple/') }}"

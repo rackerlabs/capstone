@@ -1,0 +1,10 @@
+---
+
+- name: Install capstone from source
+  pip:
+    name: "git+https://github.com/rackerlabs/capstone#egg=capstone"
+    virtualenv: "{{ keystone_venv_bin | dirname }}"
+    virtualenv_site_packages: "no"
+    extra_args: "{{ pip_install_options|default('') }}"
+  tags:
+    - capstone
