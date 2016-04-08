@@ -140,13 +140,12 @@ class RackspaceIdentity(object):
                 msg = resp.text
             LOG.info(msg)
             raise exception.Unauthorized(msg)
-        LOG.info(_LI('Found user %s in Rackspace\'s Identity system.'),
+        LOG.info(_LI('Found user %s in v2.'),
                  user_id)
         return resp.json()['user']
 
     def authenticate(self):
-        LOG.info(_LI('Authenticating user %s against Rackspace\'s Identity '
-                     'system.'), self._username)
+        LOG.info(_LI('Authenticating user %s against v2.'), self._username)
         data = {
             "auth": {
                 "passwordCredentials": {
@@ -171,8 +170,8 @@ class RackspaceIdentity(object):
         if self._scope_project_id:
             self._assert_project_scope(token_data)
 
-        LOG.info(_LI('Successfully authenticated user %s against Rackspace\'s '
-                     'Identity system.'), self._username)
+        LOG.info(_LI('Successfully authenticated user %s against v2.'),
+                 self._username)
         return token_data
 
 
