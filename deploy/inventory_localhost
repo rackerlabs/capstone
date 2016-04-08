@@ -15,7 +15,5 @@ capstone_auth_url = http://localhost:5000/v3/
 # pypi_server = https://pypi.python.org/simple/
 # trusted_pypi = https://pypi.python.org
 
-# Plight GPG Keys
-plight_keyserver = 'keyserver.ubuntu.com '
-plight_hash_id = 'A8697194C2945F97A'
+# Plight PPA
 plight_repository = 'deb http://ppa.launchpad.net/gregswift/plight/ubuntu trusty main'

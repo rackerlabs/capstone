@@ -1,0 +1,29 @@
+---
+
+- name: Create capstone dir
+  file:
+    path: /etc/capstone
+    state: directory
+    owner: keystone
+  tags:
+    - capstone
+- name: Drop capstone.conf
+  template:
+    src: templates/etc-capstone.conf
+    dest: /etc/capstone/capstone.conf
+    owner: keystone
+  tags:
+    - capstone
+- name: Drop keystone logging config
+  template:
+    src: templates/logging.conf
+    dest: /etc/keystone/logging.conf
+    owner: keystone
+  tags:
+    - capstone
+    - config
+- name: Restart apache
+  service:
+    name: "apache2"
+    state: "restarted"
+    pattern: "apache2"
