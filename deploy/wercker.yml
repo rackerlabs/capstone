@@ -56,4 +56,4 @@ build:
     - script:
       name: Attempt to curl the keystone endpoint
       # at least make sure the keystone service is running
-      code: curl http://localhost:5000/
+      code: curl --cacert /etc/ssl/certs/keystone.pem https://localhost:8443/

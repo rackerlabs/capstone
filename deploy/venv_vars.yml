@@ -61,3 +61,9 @@ pip_links:
 # world.
 plight_keyserver: "{{ plight_keyserver|default('keyserver.ubuntu.com') }}"
 plight_hash_id: "{{ plight_hash_id|default('A8697194C2945F97A') }}"
+
+# external_lb_vip_address, internal_lb_vip_address: We need to be able to
+# override these from inventory when we deploy against staging and production
+# environments.
+external_lb_vip_address: "{{ external_lb_address }}"
+internal_lb_vip_address: "{{ internal_lb_address }}"

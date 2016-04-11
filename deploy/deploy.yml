@@ -24,6 +24,9 @@
     keystone_auth_admin_token: none
     keystone_rabbitmq_password: none
     galera_client_drop_config_file: false
+    keystone_ssl: true
+    keystone_service_internaluri_proto: "https"
+    keystone_service_port: "8443"
     keystone_keystone_conf_overrides:
       DEFAULT:
         log_config_append: /etc/keystone/logging.conf
