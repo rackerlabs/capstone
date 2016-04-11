@@ -24,6 +24,7 @@
     keystone_auth_admin_token: none
     keystone_rabbitmq_password: none
     galera_client_drop_config_file: false
+    keystone_ssl: true
     keystone_keystone_conf_overrides:
       DEFAULT:
         log_config_append: /etc/keystone/logging.conf

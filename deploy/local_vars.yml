@@ -3,3 +3,5 @@
 # This file contains all the variables required to install capstone locally
 # from source.
 keystone_developer_mode: true
+external_lb_vip_address: "127.0.0.1"
+internal_lb_vip_address: "127.0.0.1"
