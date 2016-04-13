@@ -26,7 +26,7 @@ _project_properties = {
         'type': 'object',
         'properties': _domain_properties,
         'required': ['id', 'name'],
-        'additonalProperties': False,
+        'additionalProperties': False,
     }
 }
 
@@ -37,7 +37,7 @@ _user_properties = {
         'type': 'object',
         'properties': _domain_properties,
         'required': ['id', 'name'],
-        'additonalProperties': False,
+        'additionalProperties': False,
     }
 }
 

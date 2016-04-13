@@ -208,8 +208,7 @@ The tests can be run through ``tox``::
 
 Or any python test runner::
 
-    python -m unittest \
-        capstone.tests.integration.test_integration.IntegrationTests
+    python -m unittest capstone.tests.integration.test_integration
 
 Continuous integration
 ~~~~~~~~~~~~~~~~~~~~~~

@@ -51,11 +51,14 @@ class RackspaceTokenDataHelper(object):
         }
 
     def _populate_user(self, token_data, user_id, trust):
+        domain_id = self._token_data['access']['user']['domain_id']
         token_data['user'] = {
             'id': self._token_data['access']['user']['id'],
             'name': self._token_data['access']['user']['name'],
-            # Is this correct?
-            'domain': self._token_data['access']['token']['tenant'],
+            'domain': {
+                'id': domain_id,
+                'name': domain_id,
+            },
         }
 
     def _populate_roles(self, token_data, user_id, domain_id, project_id,

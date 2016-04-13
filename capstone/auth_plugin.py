@@ -102,6 +102,8 @@ class RackspaceIdentity(object):
                    {'u_name': self._username, 'd_id': user_domain})
             LOG.info(msg)
             raise exception.Unauthorized(msg)
+        # Store user's domain since not included in auth response
+        token_data['access']['user']['domain_id'] = user_domain
         LOG.info(_LI('User %(u_name)s belongs to domain %(d_id)s.'),
                  {'u_name': self._username, 'd_id': user_domain})
 
