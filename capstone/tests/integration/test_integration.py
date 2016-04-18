@@ -64,7 +64,10 @@ class BaseIntegrationTests(testtools.TestCase):
         headers = self.headers.copy()
         headers['User-Agent'] = 'capstone/0.1'
         headers['X-Auth-Token'] = token_id
-        resp = requests.get(url, headers=headers)
+        resp = requests.get(
+            url, headers=headers, cert=('/etc/ssl/certs/keystone.pem',
+                                        '/etc/ssl/private/keystone.key')
+        )
         resp.raise_for_status()
 
     def assertValidISO8601ExtendedFormatDatetime(self, dt):
@@ -93,13 +96,19 @@ class BaseIntegrationTests(testtools.TestCase):
 
     def authenticate(self, auth_data):
         resp = requests.post(
-            self.keystone_token_endpoint, headers=self.headers, json=auth_data)
+            self.keystone_token_endpoint, headers=self.headers, json=auth_data,
+            cert=('/etc/ssl/certs/keystone.pem',
+                  '/etc/ssl/private/keystone.key')
+        )
         resp.raise_for_status()
         return resp
 
     def list_users(self):
         resp = requests.get(
-            self.keystone_users_endpoint, headers=self.headers)
+            self.keystone_users_endpoint, headers=self.headers,
+            cert=('/etc/ssl/certs/keystone.pem',
+                  '/etc/ssl/private/keystone.key')
+        )
 
         return resp
 
