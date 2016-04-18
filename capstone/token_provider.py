@@ -214,9 +214,4 @@ class Provider(common.BaseProvider):
             self.v3_token_data_helper = None
 
     def validate_v3_token(self, token_ref):
-        raise NotImplemented
-        self.v3_token_data_helper = RackspaceTokenDataHelper(None)
-        try:
-            return super(Provider, self).validate_v3_token(token_ref)
-        finally:
-            self.v3_token_data_helper = None
+        raise exception.Forbidden()
