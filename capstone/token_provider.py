@@ -211,4 +211,5 @@ class Provider(common.BaseProvider):
             self.v3_token_data_helper = None
 
     def validate_v3_token(self, token_ref):
-        raise exception.Forbidden()
+        raise exception.ForbiddenNotSecurity('Unable to validate tokens ',
+                                             'against capstone')
