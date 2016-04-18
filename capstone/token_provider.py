@@ -211,4 +211,5 @@ class Provider(common.BaseProvider):
             self.v3_token_data_helper = None
 
     def validate_v3_token(self, token_ref):
-        raise exception.Forbidden()
+        msg = _('This operation is not available to all users.')
+        raise exception.ForbiddenNotSecurity(msg)
