@@ -92,15 +92,19 @@ class BaseIntegrationTests(testtools.TestCase):
         self.assertThat(e.response.json()['error']['message'],
                         matchers.Equals(expected_msg))
 
-    def authenticate(self, auth_data):
+    def authenticate(self, auth_data, expected_status=httplib.CREATED):
         resp = requests.post(
-            self.keystone_token_endpoint, headers=self.headers, json=auth_data)
-        self.assertEqual(httplib.CREATED, resp.status_code, resp.text)
+            self.keystone_token_endpoint, headers=self.headers, json=auth_data,
+            verify='/etc/ssl/certs/keystone.pem',
+        )
+        self.assertEqual(expected_status, resp.status_code, resp.text)
         return resp
 
     def list_users(self):
         resp = requests.get(
-            self.keystone_users_endpoint, headers=self.headers)
+            self.keystone_users_endpoint, headers=self.headers,
+            verify='/etc/ssl/certs/keystone.pem',
+        )
 
         return resp
 
@@ -165,7 +169,8 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
         e = self.assertRaises(
             requests.exceptions.HTTPError,
             self.authenticate,
-            data)
+            data,
+            httplib.UNAUTHORIZED)
         self.assertAuthFailed(e)
 
     def test_with_username_and_incorrect_domain_id(self):
@@ -177,7 +182,8 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
         e = self.assertRaises(
             requests.exceptions.HTTPError,
             self.authenticate,
-            data)
+            data,
+            httplib.UNAUTHORIZED)
         self.assertAuthFailed(e)
 
     def test_with_username_and_domain_name(self):
@@ -200,7 +206,8 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
         e = self.assertRaises(
             requests.exceptions.HTTPError,
             self.authenticate,
-            data)
+            data,
+            httplib.UNAUTHORIZED)
         self.assertAuthFailed(e)
 
     def test_with_user_id(self):
@@ -221,7 +228,8 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
         e = self.assertRaises(
             requests.exceptions.HTTPError,
             self.authenticate,
-            data)
+            data,
+            httplib.UNAUTHORIZED)
         self.assertAuthFailed(e)
 
     def test_with_user_id_and_domain_id(self):
@@ -244,7 +252,8 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
         e = self.assertRaises(
             requests.exceptions.HTTPError,
             self.authenticate,
-            data)
+            data,
+            httplib.UNAUTHORIZED)
         self.assertAuthFailed(e)
 
     def test_with_user_id_and_domain_name(self):
@@ -267,7 +276,8 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
         e = self.assertRaises(
             requests.exceptions.HTTPError,
             self.authenticate,
-            data)
+            data,
+            httplib.UNAUTHORIZED)
         self.assertAuthFailed(e)
 
 
@@ -297,7 +307,8 @@ class TestGettingAProjectScopedToken(BaseIntegrationTests):
         e = self.assertRaises(
             requests.exceptions.HTTPError,
             self.authenticate,
-            data)
+            data,
+            httplib.UNAUTHORIZED)
         self.assertAuthFailed(e)
 
     def test_with_domain(self):
@@ -363,7 +374,8 @@ class TestGettingADomainScopedToken(BaseIntegrationTests):
         e = self.assertRaises(
             requests.exceptions.HTTPError,
             self.authenticate,
-            data)
+            data,
+            httplib.UNAUTHORIZED)
         self.assertAuthFailed(e)
 
 
