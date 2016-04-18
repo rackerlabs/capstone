@@ -92,15 +92,19 @@ class BaseIntegrationTests(testtools.TestCase):
         self.assertThat(e.response.json()['error']['message'],
                         matchers.Equals(expected_msg))
 
-    def authenticate(self, auth_data):
+    def authenticate(self, auth_data, expected_status=httplib.CREATED):
         resp = requests.post(
-            self.keystone_token_endpoint, headers=self.headers, json=auth_data)
-        self.assertEqual(httplib.CREATED, resp.status_code, resp.text)
+            self.keystone_token_endpoint, headers=self.headers, json=auth_data,
+            verify='/etc/ssl/certs/keystone.pem',
+        )
+        self.assertEqual(expected_status, resp.status_code, resp.text)
         return resp
 
     def list_users(self):
         resp = requests.get(
-            self.keystone_users_endpoint, headers=self.headers)
+            self.keystone_users_endpoint, headers=self.headers,
+            verify='/etc/ssl/certs/keystone.pem',
+        )
 
         return resp
 
@@ -162,11 +166,7 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
             "password": self.password,
             "domain": {"id": self.domain_id},
         })
-        e = self.assertRaises(
-            requests.exceptions.HTTPError,
-            self.authenticate,
-            data)
-        self.assertAuthFailed(e)
+        self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
     def test_with_username_and_incorrect_domain_id(self):
         data = generate_password_auth_data({
@@ -174,11 +174,7 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
             "password": self.password,
             "domain": {"id": uuid.uuid4().hex},
         })
-        e = self.assertRaises(
-            requests.exceptions.HTTPError,
-            self.authenticate,
-            data)
-        self.assertAuthFailed(e)
+        self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
     def test_with_username_and_domain_name(self):
         data = generate_password_auth_data({
@@ -197,11 +193,7 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
             "password": self.password,
             "domain": {"name": uuid.uuid4().hex},
         })
-        e = self.assertRaises(
-            requests.exceptions.HTTPError,
-            self.authenticate,
-            data)
-        self.assertAuthFailed(e)
+        self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
     def test_with_user_id(self):
         data = generate_password_auth_data({
@@ -218,11 +210,7 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
             "id": uuid.uuid4().hex,
             "password": self.password,
         })
-        e = self.assertRaises(
-            requests.exceptions.HTTPError,
-            self.authenticate,
-            data)
-        self.assertAuthFailed(e)
+        self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
     def test_with_user_id_and_domain_id(self):
         data = generate_password_auth_data({
@@ -241,11 +229,7 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
             "password": self.password,
             "domain": {"id": uuid.uuid4().hex},
         })
-        e = self.assertRaises(
-            requests.exceptions.HTTPError,
-            self.authenticate,
-            data)
-        self.assertAuthFailed(e)
+        self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
     def test_with_user_id_and_domain_name(self):
         data = generate_password_auth_data({
@@ -264,11 +248,7 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
             "password": self.password,
             "domain": {"name": uuid.uuid4().hex},
         })
-        e = self.assertRaises(
-            requests.exceptions.HTTPError,
-            self.authenticate,
-            data)
-        self.assertAuthFailed(e)
+        self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
 
 class TestGettingAProjectScopedToken(BaseIntegrationTests):
@@ -294,11 +274,7 @@ class TestGettingAProjectScopedToken(BaseIntegrationTests):
                 "domain": {"id": self.domain_id},
             },
             scope={"project": {"id": uuid.uuid4().hex}})
-        e = self.assertRaises(
-            requests.exceptions.HTTPError,
-            self.authenticate,
-            data)
-        self.assertAuthFailed(e)
+        self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
     def test_with_domain(self):
         data = generate_password_auth_data_with_scope(
@@ -360,11 +336,7 @@ class TestGettingADomainScopedToken(BaseIntegrationTests):
                 "domain": {"id": self.domain_id},
             },
             scope={"domain": {"id": uuid.uuid4().hex}})
-        e = self.assertRaises(
-            requests.exceptions.HTTPError,
-            self.authenticate,
-            data)
-        self.assertAuthFailed(e)
+        self.authenticate(data, httplib.UNAUTHORIZED)
 
 
 class TestCapstonePolicy(BaseIntegrationTests):
