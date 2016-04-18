@@ -93,13 +93,17 @@ class BaseIntegrationTests(testtools.TestCase):
 
     def authenticate(self, auth_data):
         resp = requests.post(
-            self.keystone_token_endpoint, headers=self.headers, json=auth_data)
+            self.keystone_token_endpoint, headers=self.headers, json=auth_data,
+            verify='/etc/ssl/certs/keystone.pem',
+        )
         resp.raise_for_status()
         return resp
 
     def list_users(self):
         resp = requests.get(
-            self.keystone_users_endpoint, headers=self.headers)
+            self.keystone_users_endpoint, headers=self.headers,
+            verify='/etc/ssl/certs/keystone.pem',
+        )
 
         return resp
 
