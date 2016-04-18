@@ -10,6 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import httplib
 import uuid
 
 from os_client_config import config as cloud_config
@@ -65,7 +66,7 @@ class BaseIntegrationTests(testtools.TestCase):
         headers['User-Agent'] = 'capstone/0.1'
         headers['X-Auth-Token'] = token_id
         resp = requests.get(url, headers=headers)
-        resp.raise_for_status()
+        self.assertEqual(httplib.OK, resp.status_code, resp.text)
 
     def assertValidISO8601ExtendedFormatDatetime(self, dt):
         try:
@@ -94,7 +95,7 @@ class BaseIntegrationTests(testtools.TestCase):
     def authenticate(self, auth_data):
         resp = requests.post(
             self.keystone_token_endpoint, headers=self.headers, json=auth_data)
-        resp.raise_for_status()
+        self.assertEqual(httplib.CREATED, resp.status_code, resp.text)
         return resp
 
     def list_users(self):
