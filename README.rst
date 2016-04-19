@@ -290,7 +290,7 @@ that was used in the build.
 Docker
 ------
 
-Docker image can be built using ``build_docker.sh`` in the deploy directory.
+Docker image can be built using ``build_docker.sh`` script.
 The Docker image is tagged with the git sha revision and latest tag.  The created
 image can then be run using docker-compose.  The ``docker-compose.yml`` file
 exposes the following environment variables: SERVICE_USER_NAME,
@@ -298,7 +298,6 @@ SERVICE_USER_PASSWORD, RACKSPACE_BASE_URL.
 
 Create the docker image and run it with the following commands::
 
-    cd deploy
     ./build_docker.sh
     docker-compose up
 
