@@ -13,11 +13,9 @@
 import uuid
 
 from keystone import exception
-import mock
 import testtools
 
 from capstone import auth_plugin
-from capstone import const
 
 
 class TestRackspaceIdentity(testtools.TestCase):
@@ -75,15 +73,10 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        user_data = {
-            const.RACKSPACE_DOMAIN_KEY: self.domain,
-        }
         identity = auth_plugin.RackspaceIdentity.from_username(
             self.username, self.password, user_domain_id=self.domain)
-        with mock.patch.object(auth_plugin.RackspaceIdentity,
-                               'from_admin_config') as m:
-            m().get_user.return_value = user_data
-            identity._assert_user_domain(token_data)
+        identity._user_ref = {'RAX-AUTH:domainId': self.domain}
+        identity._assert_user_domain(token_data)
 
     def test_correct_user_domain_name_from_Rackspace(self):
         """Check the user's domain using the data provided by Rackspace."""
@@ -98,15 +91,10 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        user_data = {
-            const.RACKSPACE_DOMAIN_KEY: self.domain,
-        }
         identity = auth_plugin.RackspaceIdentity.from_username(
             self.username, self.password, user_domain_name=self.domain)
-        with mock.patch.object(auth_plugin.RackspaceIdentity,
-                               'from_admin_config') as m:
-            m().get_user.return_value = user_data
-            identity._assert_user_domain(token_data)
+        identity._user_ref = {'RAX-AUTH:domainId': self.domain}
+        identity._assert_user_domain(token_data)
 
     def test_incorrect_user_domain(self):
         token_data = {
@@ -120,17 +108,11 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        user_data = {
-            const.RACKSPACE_DOMAIN_KEY: uuid.uuid4().hex,
-        }
         identity = auth_plugin.RackspaceIdentity.from_username(
             self.username, self.password, scope_domain_id=self.domain)
-        with mock.patch.object(auth_plugin.RackspaceIdentity,
-                               'from_admin_config') as m:
-            m().get_user.return_value = user_data
-            self.assertRaises(exception.Unauthorized,
-                              identity._assert_domain_scope,
-                              token_data)
+        identity._user_ref = {'RAX-AUTH:domainId': uuid.uuid4().hex}
+        self.assertRaises(exception.Unauthorized,
+                          identity._assert_domain_scope, token_data)
 
     def test_correct_domain_scope_from_roles(self):
         """Check the domain scope using the project IDs from the roles."""
@@ -147,6 +129,7 @@ class TestRackspaceIdentity(testtools.TestCase):
         }
         identity = auth_plugin.RackspaceIdentity.from_username(
             self.username, self.password, scope_domain_id=self.domain)
+        identity._user_ref = {'RAX-AUTH:domainId': self.domain}
         identity._assert_domain_scope(token_data)
 
     def test_correct_domain_scope_from_Rackspace(self):
@@ -162,15 +145,10 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        user_data = {
-            const.RACKSPACE_DOMAIN_KEY: self.domain,
-        }
         identity = auth_plugin.RackspaceIdentity.from_username(
             self.username, self.password, scope_domain_id=self.domain)
-        with mock.patch.object(auth_plugin.RackspaceIdentity,
-                               'from_admin_config') as m:
-            m().get_user.return_value = user_data
-            identity._assert_domain_scope(token_data)
+        identity._user_ref = {'RAX-AUTH:domainId': self.domain}
+        identity._assert_domain_scope(token_data)
 
     def test_incorrect_domain_scope(self):
         token_data = {
@@ -184,14 +162,8 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        user_data = {
-            const.RACKSPACE_DOMAIN_KEY: uuid.uuid4().hex,
-        }
         identity = auth_plugin.RackspaceIdentity.from_username(
             self.username, self.password, scope_domain_id=self.domain)
-        with mock.patch.object(auth_plugin.RackspaceIdentity,
-                               'from_admin_config') as m:
-            m().get_user.return_value = user_data
-            self.assertRaises(exception.Unauthorized,
-                              identity._assert_domain_scope,
-                              token_data)
+        identity._user_ref = {'RAX-AUTH:domainId': uuid.uuid4().hex}
+        self.assertRaises(exception.Unauthorized,
+                          identity._assert_domain_scope, token_data)
