@@ -8,7 +8,7 @@ EXPOSE 5000 35357
 
 ENV USER root
 
-WORKDIR /pipeline/source
+WORKDIR /pipeline/source/deploy
 
 CMD envsubst < inventory_docker > inventory && \
     ansible-playbook -i inventory deploy.yml --tags config && \
