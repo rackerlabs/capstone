@@ -71,6 +71,9 @@ class RackspaceIdentity(object):
     def get_user_url(self, user_id):
         return '%s/users/%s' % (conf.rackspace_base_url, user_id)
 
+    def get_user_by_name_url(self, username):
+        return '%s/users?name=%s' % (conf.rackspace_base_url, username)
+
     def get_token_url(self):
         return conf.rackspace_base_url + '/tokens/'
 
@@ -84,12 +87,6 @@ class RackspaceIdentity(object):
         if domain in tenants:
             return True  # shortcut for the common case
 
-        if not self._user_ref:
-            admin_client = RackspaceIdentity.from_admin_config()
-            admin_client.authenticate()
-            user_id = token_data['access']['user']['id']
-            self._user_ref = admin_client.get_user(user_id)
-
         user_ref_domain = self._user_ref[const.RACKSPACE_DOMAIN_KEY]
         if not user_ref_domain == domain:
             return False
@@ -102,8 +99,6 @@ class RackspaceIdentity(object):
                    {'u_name': self._username, 'd_id': user_domain})
             LOG.info(msg)
             raise exception.Unauthorized(msg)
-        # Store user's domain since not included in auth response
-        token_data['access']['user']['domain_id'] = user_domain
         LOG.info(_LI('User %(u_name)s belongs to domain %(d_id)s.'),
                  {'u_name': self._username, 'd_id': user_domain})
 
@@ -115,6 +110,11 @@ class RackspaceIdentity(object):
             raise exception.Unauthorized(msg)
         LOG.info(_LI('User %(u_name)s can scope to domain %(d_id)s.'),
                  {'u_name': self._username, 'd_id': self._scope_domain_id})
+
+    def _populate_user_damain(self, token_data):
+        # Store user's domain since not included in auth response
+        token_data['access']['user']['domain_id'] = self._user_ref[
+            const.RACKSPACE_DOMAIN_KEY]
 
     def _assert_project_scope(self, token_data):
         sentinal = object()
@@ -128,13 +128,11 @@ class RackspaceIdentity(object):
         LOG.info(_LI('User %(u_name)s can scope to project %(p_id)s.'),
                  {'u_name': self._username, 'p_id': self._scope_project_id})
 
-    def get_user(self, user_id):
-        token_data = self.authenticate()
-        admin_token = token_data['access']['token']['id']
-
+    def _get_user(self, url, token):
         headers = const.HEADERS.copy()
-        headers['X-Auth-Token'] = admin_token
-        resp = requests.get(self.get_user_url(user_id), headers=headers)
+        headers['X-Auth-Token'] = token
+
+        resp = requests.get(url, headers=headers)
         if resp.status_code != requests.codes.ok:
             if resp.status_code == requests.codes.not_found:
                 msg = resp.json()['itemNotFound']['message']
@@ -142,9 +140,18 @@ class RackspaceIdentity(object):
                 msg = resp.text
             LOG.info(msg)
             raise exception.Unauthorized(msg)
-        LOG.info(_LI('Found user %s in v2.'),
-                 user_id)
-        return resp.json()['user']
+        user = resp.json()['user']
+        LOG.info(_LI('Found user %s in v2.'), user['id'])
+        return user
+
+    def get_user(self, user_id):
+        token_data = self.authenticate()
+        return self._get_user(self.get_user_url(user_id),
+                              token_data['access']['token']['id'])
+
+    def get_user_by_name(self, username, token_data):
+        return self._get_user(self.get_user_by_name_url(username),
+                              token_data['access']['token']['id'])
 
     def authenticate(self):
         LOG.info(_LI('Authenticating user %s against v2.'), self._username)
@@ -163,8 +170,14 @@ class RackspaceIdentity(object):
         resp.raise_for_status()
         token_data = resp.json()
 
+        # Retrieve user to check/populate user's domain
+        if not self._user_ref:
+            self._user_ref = self.get_user_by_name(self._username, token_data)
+
         if self._user_domain_id or self._user_domain_name:
             self._assert_user_domain(token_data)
+
+        self._populate_user_damain(token_data)
 
         if self._scope_domain_id:
             self._assert_domain_scope(token_data)
