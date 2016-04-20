@@ -41,10 +41,7 @@ build:
       code: python /tmp/get-pip.py
     - script:
       name: Install pip requirements
-      code: pip install "ansible<2" yamllint
-    - script:
-      name: Validate YAML
-      code: yamllint deploy
+      code: pip install "ansible<2"
     - script:
       cwd: /pipeline/source/deploy
       name: Install ansible galaxy requirements

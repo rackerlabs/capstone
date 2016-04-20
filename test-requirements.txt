@@ -5,13 +5,5 @@ python-subunit>=0.0.18 # Apache-2.0/BSD
 requests-mock==0.7.0
 testrepository>=0.0.18 # Apache-2.0/BSD
 testtools>=1.4.0 # MIT
-
-flake8>2.4.1,<2.6.0  # MIT
-flake8_docstrings==0.2.1.post1  # MIT
-hacking>=0.10.2,<0.11  # Apache-2.0
-mccabe==0.2.1 # MIT License
-pep257==0.7.0 # MIT License
-pep8==1.5.7  # MIT
-pyflakes==0.8.1  # MIT
 coverage==4.0.3
 git+https://git.openstack.org/openstack/keystone@stable/liberty#egg=Keystone
