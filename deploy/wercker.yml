@@ -39,10 +39,7 @@ build:
       code: python /tmp/get-pip.py
     - script:
       name: Install pip requirements
-      code: pip install "ansible<2" yamllint
-    - script:
-      name: Validate YAML
-      code: yamllint .
+      code: pip install "ansible<2"
     - script:
       name: Install ansible galaxy requirements
       code: ansible-galaxy install -r ansible-role-requirements.yml
