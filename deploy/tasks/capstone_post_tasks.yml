@@ -14,6 +14,7 @@
     owner: keystone
   tags:
     - capstone
+    - config
 - name: Drop keystone logging config
   template:
     src: templates/logging.conf
