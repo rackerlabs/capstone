@@ -1,0 +1,23 @@
+---
+
+extends: default
+
+rules:
+  # Raise warnings instead of errors, because warnings do not cause tox
+  # failures.
+  comments:
+    level: error
+  comments-indentation:
+    level: error
+  document-start:
+    level: error
+
+  # This is set higher by default, but you shouldn't need extra whitespace in
+  # YAML.
+  empty-lines:
+    max: 1
+
+  # This is set higher by default, but let's reduce it to match the PEP8
+  # convention (79 chars + 1 newline).
+  line-length:
+    max: 79
