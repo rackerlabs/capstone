@@ -6,7 +6,8 @@
   scm: git
   version: master
 - name: apt_package_pinning
-  src: https://git.openstack.org/openstack/openstack-ansible-apt_package_pinning
+  src: >
+    https://git.openstack.org/openstack/openstack-ansible-apt_package_pinning
   scm: git
   version: master
 - name: pip_install
