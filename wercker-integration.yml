@@ -6,6 +6,8 @@ build:
     - script:
       name: Install apt requirements
       code: |
+        sed "s@archive.ubuntu.com@mirror.rackspace.com@" -i \
+            /etc/apt/sources.list
         apt-get update
         # apt-transport-https is only required due to
         # https://bugs.launchpad.net/openstack-ansible/+bug/1547541
