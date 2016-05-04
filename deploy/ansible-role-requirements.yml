@@ -27,6 +27,6 @@
   scm: git
   version: stable/mitaka
 - name: os_keystone
-  src: https://github.com/openstack/openstack-ansible-os_keystone
+  src: https://git.openstack.org/openstack/openstack-ansible-os_keystone
   scm: git
   version: stable/mitaka
