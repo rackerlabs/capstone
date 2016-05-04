@@ -214,7 +214,6 @@ class Provider(common.BaseProvider):
             self.v3_token_data_helper = None
 
     def validate_v3_token(self, token_ref):
-        # TODO(lbragstad): This should be changed to use
-        # exception.ForbiddenNotSecurity() with a detailed error message once
-        # we switch to using stable/mitaka.
-        raise exception.Forbidden()
+        raise exception.ForbiddenNotSecurity(
+            'The requested operation is forbidden because token validation is'
+            ' not supported by the v3 API; use v2.0 instead.')
