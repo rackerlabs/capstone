@@ -128,6 +128,19 @@ class RackspaceIdentity(object):
         LOG.info(_LI('User %(u_name)s can scope to project %(p_id)s.'),
                  {'u_name': self._username, 'p_id': self._scope_project_id})
 
+    def _update_headers_with_x_forwarded_for_header(
+            self, headers, context=None):
+        if not context:
+            return
+
+        if 'x-forwarded-for' not in context.get('header', []):
+            client = context['environment']['HTTP_HOST']
+            server = context['environment']['SERVER_NAME']
+
+            headers['X-Forwarded-For'] = '{0}, {1}'.format(client, server)
+        else:
+            headers['X-Forwarded-For'] = context['header']['x-forwarded-for']
+
     def _get_user(self, url, token, params=None):
         headers = const.HEADERS.copy()
         headers['X-Auth-Token'] = token
@@ -154,7 +167,10 @@ class RackspaceIdentity(object):
                               token_data['access']['token']['id'],
                               params={'name': username})
 
-    def authenticate(self):
+    def authenticate(self, context=None):
+        headers = const.HEADERS.copy()
+        self._update_headers_with_x_forwarded_for_header(headers, context)
+
         LOG.info(_LI('Authenticating user %s against v2.'), self._username)
         data = {
             "auth": {
@@ -166,7 +182,7 @@ class RackspaceIdentity(object):
         }
         resp = requests.post(
             self.get_token_url(),
-            headers=const.HEADERS,
+            headers=headers,
             json=data)
         resp.raise_for_status()
         token_data = resp.json()
@@ -226,7 +242,7 @@ class Password(auth.AuthMethodHandler):
                     user_domain_name=user_domain_name,
                     scope_domain_id=scope_domain_id,
                     scope_project_id=scope_project_id)
-            token_data = identity.authenticate()
+            token_data = identity.authenticate(context)
 
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 401:
