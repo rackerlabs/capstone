@@ -10,12 +10,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import socket
 import uuid
 
 from keystone import exception
 import testtools
 
 from capstone import auth_plugin
+from capstone import const
 
 
 class TestRackspaceIdentity(testtools.TestCase):
@@ -167,3 +169,17 @@ class TestRackspaceIdentity(testtools.TestCase):
         identity._user_ref = {'RAX-AUTH:domainId': uuid.uuid4().hex}
         self.assertRaises(exception.Unauthorized,
                           identity._assert_domain_scope, token_data)
+
+    def test_add_x_forwarded_for_header(self):
+        headers = const.HEADERS.copy()
+
+        identity = auth_plugin.RackspaceIdentity.from_username(
+            self.username, self.password, user_domain_name=self.domain)
+        identity._add_x_forwarded_for_header(headers)
+
+        self.assertTrue('X-Forwarded-For' in headers)
+
+        try:
+            socket.inet_aton(headers['X-Forwarded-For'])
+        except socket.error:
+            self.fail('Invalid X-Forwarded-For IP Address')

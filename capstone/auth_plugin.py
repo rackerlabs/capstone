@@ -15,6 +15,7 @@ from keystone import exception
 from keystone.i18n import _LI
 from oslo_log import log
 import requests
+import socket
 
 from capstone import conf
 from capstone import const
@@ -128,9 +129,13 @@ class RackspaceIdentity(object):
         LOG.info(_LI('User %(u_name)s can scope to project %(p_id)s.'),
                  {'u_name': self._username, 'p_id': self._scope_project_id})
 
+    def _add_x_forwarded_for_header(self, headers):
+        headers['X-Forwarded-For'] = socket.gethostbyname(socket.getfqdn())
+
     def _get_user(self, url, token, params=None):
         headers = const.HEADERS.copy()
         headers['X-Auth-Token'] = token
+        self._add_x_forwarded_for_header(headers)
 
         resp = requests.get(url, headers=headers, params=params)
         if resp.status_code != requests.codes.ok:
@@ -155,6 +160,9 @@ class RackspaceIdentity(object):
                               params={'name': username})
 
     def authenticate(self):
+        headers = const.HEADERS.copy()
+        self._add_x_forwarded_for_header(headers)
+
         LOG.info(_LI('Authenticating user %s against v2.'), self._username)
         data = {
             "auth": {
@@ -166,7 +174,7 @@ class RackspaceIdentity(object):
         }
         resp = requests.post(
             self.get_token_url(),
-            headers=const.HEADERS,
+            headers=headers,
             json=data)
         resp.raise_for_status()
         token_data = resp.json()
