@@ -16,7 +16,9 @@ dev:
             libssl-dev
         curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
         python /tmp/get-pip.py
-        pip install "ansible<2"
+        pip install \
+            "paramiko<2"  # paramiko 2.0 introduces a dep on pypi/cryptography
+            "ansible<2"
         ansible-galaxy install -r ansible-role-requirements.yml
     - internal/shell:
       code: |
