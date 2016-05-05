@@ -41,26 +41,24 @@ keystone_requires_pip_packages:
 # these because we can't assume production and staging environments have access
 # to the outside world. Instead, these should resolve to appropriate internal
 # mirrors.
-pip_upstream_url: >
-  "{{ pip_url|default('https://bootstrap.pypa.io/get-pip.py') }}"
+pip_upstream_url: "{{ pip_url }}"
 pip_global_conf_overrides:
   global:
-    index-url: "{{ pypi_server|default('https://pypi.python.org/simple/') }}"
-    find-links: "{{ pypi_server|default('https://pypi.python.org/simple/') }}"
-    trusted-host: >
-      "{{ trusted_pypi|default('https://pypi.python.org/simple/') }}"
+    index-url: "{{ pypi_server }}"
+    find-links: "{{ pypi_server }}"
+    trusted-host: > "{{ trusted_pypi }}"
     no-index: false
     allow-all-external: true
     no-allow-insecure: false
 pip_links:
   - name: internal
-    link: "{{ pypi_server|default('https://pypi.python.org/simple/') }}"
+    link: "{{ pypi_server }}"
 
 # plight_keyserver, plight_hash_id: We need to be able to override these so we
 # can install plight on environments that don't have access to the outside
 # world.
-plight_keyserver: "{{ plight_keyserver|default('keyserver.ubuntu.com') }}"
-plight_hash_id: "{{ plight_hash_id|default('A8697194C2945F97A') }}"
+plight_keyserver: "{{ plight_keyserver }}"
+plight_hash_id: "{{ plight_hash_id }}"
 
 # external_lb_vip_address, internal_lb_vip_address: We need to be able to
 # override these from inventory when we deploy against staging and production
