@@ -40,7 +40,7 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        identity = auth_plugin.RackspaceIdentity.from_username(
+        identity = auth_plugin.RackspaceIdentity(
             self.username, self.password, user_domain_id=self.domain)
         identity._assert_user_domain(token_data)
 
@@ -57,7 +57,7 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        identity = auth_plugin.RackspaceIdentity.from_username(
+        identity = auth_plugin.RackspaceIdentity(
             self.username, self.password, user_domain_name=self.domain)
         identity._assert_user_domain(token_data)
 
@@ -74,9 +74,10 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        identity = auth_plugin.RackspaceIdentity.from_username(
-            self.username, self.password, user_domain_id=self.domain)
-        identity._user_ref = {'RAX-AUTH:domainId': self.domain}
+        identity = auth_plugin.RackspaceIdentity(
+            self.username, self.password,
+            user_domain_id=self.domain,
+            user_ref={'RAX-AUTH:domainId': self.domain})
         identity._assert_user_domain(token_data)
 
     def test_correct_user_domain_name_from_Rackspace(self):
@@ -92,9 +93,10 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        identity = auth_plugin.RackspaceIdentity.from_username(
-            self.username, self.password, user_domain_name=self.domain)
-        identity._user_ref = {'RAX-AUTH:domainId': self.domain}
+        identity = auth_plugin.RackspaceIdentity(
+            self.username, self.password,
+            user_domain_name=self.domain,
+            user_ref={'RAX-AUTH:domainId': self.domain})
         identity._assert_user_domain(token_data)
 
     def test_incorrect_user_domain(self):
@@ -109,9 +111,10 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        identity = auth_plugin.RackspaceIdentity.from_username(
-            self.username, self.password, scope_domain_id=self.domain)
-        identity._user_ref = {'RAX-AUTH:domainId': uuid.uuid4().hex}
+        identity = auth_plugin.RackspaceIdentity(
+            self.username, self.password,
+            scope_domain_id=self.domain,
+            user_ref={'RAX-AUTH:domainId': uuid.uuid4().hex})
         self.assertRaises(exception.Unauthorized,
                           identity._assert_domain_scope, token_data)
 
@@ -128,9 +131,10 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        identity = auth_plugin.RackspaceIdentity.from_username(
-            self.username, self.password, scope_domain_id=self.domain)
-        identity._user_ref = {'RAX-AUTH:domainId': self.domain}
+        identity = auth_plugin.RackspaceIdentity(
+            self.username, self.password,
+            scope_domain_id=self.domain,
+            user_ref={'RAX-AUTH:domainId': self.domain})
         identity._assert_domain_scope(token_data)
 
     def test_correct_domain_scope_from_Rackspace(self):
@@ -146,9 +150,10 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        identity = auth_plugin.RackspaceIdentity.from_username(
-            self.username, self.password, scope_domain_id=self.domain)
-        identity._user_ref = {'RAX-AUTH:domainId': self.domain}
+        identity = auth_plugin.RackspaceIdentity(
+            self.username, self.password,
+            scope_domain_id=self.domain,
+            user_ref={'RAX-AUTH:domainId': self.domain})
         identity._assert_domain_scope(token_data)
 
     def test_incorrect_domain_scope(self):
@@ -163,9 +168,10 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        identity = auth_plugin.RackspaceIdentity.from_username(
-            self.username, self.password, scope_domain_id=self.domain)
-        identity._user_ref = {'RAX-AUTH:domainId': uuid.uuid4().hex}
+        identity = auth_plugin.RackspaceIdentity(
+            self.username, self.password,
+            scope_domain_id=self.domain,
+            user_ref={'RAX-AUTH:domainId': uuid.uuid4().hex})
         self.assertRaises(exception.Unauthorized,
                           identity._assert_domain_scope, token_data)
 
