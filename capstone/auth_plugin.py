@@ -16,6 +16,7 @@ from keystone.i18n import _LI
 from oslo_log import log
 import requests
 
+from capstone import cache
 from capstone import conf
 from capstone import const
 
@@ -28,24 +29,24 @@ METHOD_NAME = 'password'
 class RackspaceIdentity(object):
 
     @classmethod
-    def from_username(cls, username, password,
+    def from_username(cls, username, password, context=None,
                       user_domain_id=None, user_domain_name=None,
                       scope_domain_id=None, scope_project_id=None):
-        return cls(username, password,
+        return cls(username, password, context=context,
                    user_domain_id=user_domain_id,
                    user_domain_name=user_domain_name,
                    scope_domain_id=scope_domain_id,
                    scope_project_id=scope_project_id)
 
     @classmethod
-    def from_user_id(cls, user_id, password,
+    def from_user_id(cls, user_id, password, context=None,
                      user_domain_id=None, user_domain_name=None,
                      scope_domain_id=None, scope_project_id=None):
         admin_client = cls.from_admin_config()
         admin_client.authenticate()
         user_ref = admin_client.get_user(user_id)
         username = user_ref['username']
-        return cls(username, password,
+        return cls(username, password, context,
                    user_domain_id=user_domain_id,
                    user_domain_name=user_domain_name,
                    scope_domain_id=scope_domain_id,
@@ -56,10 +57,11 @@ class RackspaceIdentity(object):
     def from_admin_config(cls):
         return cls.from_username(conf.admin_username, conf.admin_password)
 
-    def __init__(self, username, password,
+    def __init__(self, username, password, context=None,
                  user_domain_id=None, user_domain_name=None,
                  scope_domain_id=None, scope_project_id=None,
                  user_ref=None):
+        self._context = context
         self._username = username
         self._password = password
         self._user_domain_id = user_domain_id
@@ -128,17 +130,16 @@ class RackspaceIdentity(object):
         LOG.info(_LI('User %(u_name)s can scope to project %(p_id)s.'),
                  {'u_name': self._username, 'p_id': self._scope_project_id})
 
-    def _update_headers_with_x_forwarded_for_header(
-            self, headers, context=None):
-        if not context:
+    @property
+    def x_forwarded_for(self):
+        if not self._context:
             return
-
-        if 'x-forwarded-for' not in context.get('header', []):
-            headers['X-Forwarded-For'] = context['environment']['REMOTE_ADDR']
+        elif 'x-forwarded-for' not in self._context.get('header', []):
+            return self._context['environment']['REMOTE_ADDR']
         else:
-            headers['X-Forwarded-For'] = '{0}, {1}'.format(
-                context['header']['x-forwarded-for'],
-                context['environment']['REMOTE_ADDR'])
+            return '{0}, {1}'.format(
+                self._context['header']['x-forwarded-for'],
+                self._context['environment']['REMOTE_ADDR'])
 
     def _get_user(self, url, token, params=None):
         headers = const.HEADERS.copy()
@@ -156,6 +157,7 @@ class RackspaceIdentity(object):
         LOG.info(_LI('Found user %s in v2.'), user['id'])
         return user
 
+    @cache.memoize
     def get_user(self, user_id):
         token_data = self.authenticate()
         return self._get_user(self.get_user_url(user_id=user_id),
@@ -166,16 +168,17 @@ class RackspaceIdentity(object):
                               token_data['access']['token']['id'],
                               params={'name': username})
 
-    def authenticate(self, context=None):
+    @cache.memoize
+    def _authenticate(self, username, password, x_forwarded_for):
         headers = const.HEADERS.copy()
-        self._update_headers_with_x_forwarded_for_header(headers, context)
-
-        LOG.info(_LI('Authenticating user %s against v2.'), self._username)
+        if x_forwarded_for:
+            headers['X-Forwarded-For'] = x_forwarded_for
+        LOG.info(_LI('Authenticating user %s against v2.'), username)
         data = {
             "auth": {
                 "passwordCredentials": {
-                    "username": self._username,
-                    "password": self._password,
+                    "username": username,
+                    "password": password,
                 },
             },
         }
@@ -202,8 +205,12 @@ class RackspaceIdentity(object):
             self._assert_project_scope(token_data)
 
         LOG.info(_LI('Successfully authenticated user %s against v2.'),
-                 self._username)
+                 username)
         return token_data
+
+    def authenticate(self, context=None):
+        return self._authenticate(
+            self._username, self._password, self.x_forwarded_for)
 
 
 class Password(auth.AuthMethodHandler):
