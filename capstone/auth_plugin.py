@@ -16,6 +16,7 @@ from keystone.i18n import _LI
 from oslo_log import log
 import requests
 
+from capstone import cache
 from capstone import conf
 from capstone import const
 
@@ -144,6 +145,7 @@ class RackspaceIdentity(object):
         LOG.info(_LI('Found user %s in v2.'), user['id'])
         return user
 
+    @cache.memoize
     def get_user(self, user_id):
         token_data = self.authenticate()
         return self._get_user(self.get_user_url(user_id=user_id),
@@ -154,13 +156,14 @@ class RackspaceIdentity(object):
                               token_data['access']['token']['id'],
                               params={'name': username})
 
-    def authenticate(self):
-        LOG.info(_LI('Authenticating user %s against v2.'), self._username)
+    @cache.memoize
+    def _authenticate(self, username, password):
+        LOG.info(_LI('Authenticating user %s against v2.'), username)
         data = {
             "auth": {
                 "passwordCredentials": {
-                    "username": self._username,
-                    "password": self._password,
+                    "username": username,
+                    "password": password,
                 },
             },
         }
@@ -187,8 +190,11 @@ class RackspaceIdentity(object):
             self._assert_project_scope(token_data)
 
         LOG.info(_LI('Successfully authenticated user %s against v2.'),
-                 self._username)
+                 username)
         return token_data
+
+    def authenticate(self):
+        return self._authenticate(self._username, self._password)
 
 
 class Password(auth.AuthMethodHandler):
