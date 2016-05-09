@@ -16,6 +16,7 @@ from keystone.i18n import _LI
 from oslo_log import log
 import requests
 
+from capstone import cache
 from capstone import conf
 from capstone import const
 
@@ -141,6 +142,7 @@ class RackspaceIdentity(object):
                 context['header']['x-forwarded-for'],
                 context['environment']['REMOTE_ADDR'])
 
+    @cache.memoize
     def _get_user(self, url, params=None):
         token = self._token_data['access']['token']['id']
         headers = const.HEADERS.copy()
@@ -159,22 +161,28 @@ class RackspaceIdentity(object):
         return user
 
     def get_user(self, user_id):
-        token_data = self.authenticate()
+        self.authenticate()
         return self._get_user(self.get_user_url(user_id=user_id))
 
     def get_user_by_name(self, username):
+        self.authenticate()
         return self._get_user(self.get_user_url(), params={'name': username})
 
     def authenticate(self, context=None):
         headers = const.HEADERS.copy()
         self._update_headers_with_x_forwarded_for_header(headers, context)
+        if self._token_data:
+            return self._token_data
+        return self._authenticate(self._username)
 
-        LOG.info(_LI('Authenticating user %s against v2.'), self._username)
+    @cache.memoize
+    def _authenticate(self, username, password):
+        LOG.info(_LI('Authenticating user %s against v2.'), username)
         data = {
             "auth": {
                 "passwordCredentials": {
-                    "username": self._username,
-                    "password": self._password,
+                    "username": username,
+                    "password": password,
                 },
             },
         }
@@ -187,7 +195,7 @@ class RackspaceIdentity(object):
 
         # Retrieve user to check/populate user's domain
         if not self._user_ref:
-            self._user_ref = self.get_user_by_name(self._username)
+            self._user_ref = self.get_user_by_name(username)
 
         if self._user_domain_id or self._user_domain_name:
             self._assert_user_domain(token_data)
@@ -201,7 +209,7 @@ class RackspaceIdentity(object):
             self._assert_project_scope(token_data)
 
         LOG.info(_LI('Successfully authenticated user %s against v2.'),
-                 self._username)
+                 username)
 
         self._token_data = token_data
         return self._token_data
