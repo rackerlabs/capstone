@@ -7,3 +7,7 @@ polling_period = 60
 username = username_here
 password = password_here
 project_id = project_id_here
+
+[capstone]
+caching = true
+cache_time = 600
