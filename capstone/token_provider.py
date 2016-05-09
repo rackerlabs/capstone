@@ -107,11 +107,25 @@ class RackspaceTokenDataHelper(object):
             for interface in ('adminURL', 'internalURL', 'publicURL'):
                 if interface in v2_endpoint:
                     url = v2_endpoint[interface]
+
+                    # Interface names in v3 do not include "URL", so just chop
+                    # that bit off.
                     interface = interface[:-3]
 
+                    # v2 does not return endpoint IDs, but v3 clients will
+                    # expect capstone to consistently return the same IDs for
+                    # the same endpoints. To do that, we simply compute a hash
+                    # of the endpoint's other attributes (include some
+                    # attributes of the owning service to ensure uniqueness).
+                    # If the v2 endpoint does not have a region key, we use an
+                    # empty string here just to ensure the hash succeeds.
                     id_sha = hashlib.sha1(
                         v2_service['name'] + v2_service['type'] +
                         interface + v2_endpoint.get('region', '') + url)
+
+                    # v3 endpoints always have a region. If v2 either did not
+                    # return a region key, or the region value was null, then
+                    # capstone will return a null value.
                     endpoint = {
                         'id': id_sha.hexdigest(),
                         'region': v2_endpoint.get('region'),
@@ -122,6 +136,10 @@ class RackspaceTokenDataHelper(object):
 
         v3_catalog = []
         for v2_service in v2_catalog:
+            # v2 does not return service IDs, but v3 clients will expect
+            # capstone to consistently return the same IDs for the same
+            # services. To do that, we simply compute a hash of the service's
+            # other attributes.
             id_sha = hashlib.sha1(v2_service['name'] + v2_service['type'])
             service = {
                 'id': id_sha.hexdigest(),
