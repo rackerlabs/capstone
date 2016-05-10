@@ -1,0 +1,19 @@
+---
+
+- name: Deploy mock v2 service
+  hosts: keystone_all
+  tasks:
+    - name: Drop apache configuration
+      template:
+        src=templates/etc/apache2/sites-enabled/mock-v2.conf
+        dest=/etc/apache2/sites-enabled/mock-v2.conf
+
+    - name: Drop WSGI script
+      template:
+        src=templates/var/www/cgi-bin/mock-v2.wsgi
+        dest=/var/www/cgi-bin/mock-v2.wsgi
+
+    - name: Restart apache
+      service:
+        name=apache2
+        state=restarted
