@@ -24,6 +24,9 @@ import wsgiref.simple_server
 PLAIN_TEXT = ('Content-type', 'plain/text')
 APP_JSON = ('Content-type', 'application/json')
 
+# Because this is only for testing, we can always run the app in debug mode.
+app.debug = True
+
 
 def hash_str(*args):
     """Hash the specified values together to provide predictable responses."""
