@@ -19,6 +19,9 @@ from flask import request
 
 app = flask.Flask('v2')
 
+# Because this is only for testing, we can always run the app in debug mode.
+app.debug = True
+
 
 def hash_str(*args):
     """Hash the specified values together to provide predictable responses."""
