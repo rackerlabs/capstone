@@ -46,6 +46,11 @@ build:
       # at least make sure the keystone service is running
       code: curl --cacert /etc/ssl/certs/keystone.pem https://localhost:8443/
     - script:
+      name: Deploy mock v2 service
+      cwd: /pipeline/source/deploy
+      code: |
+        ansible-playbook -i $ANSIBLE_INVENTORY deploy_mock_v2.yml -e @local_vars.yml
+    - script:
       name: Setup integration testing requirements
       cwd: /pipeline/source/deploy
       code: |
