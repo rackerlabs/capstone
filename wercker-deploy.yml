@@ -5,8 +5,8 @@ dev:
   steps:
     - script:
       name: Do pre-deploy work
+      cwd: /pipeline/source/deploy
       code: |
-        cwd: /pipeline/source/deploy
         sed 's@archive.ubuntu.com@mirror.rackspace.com@' \
             -i /etc/apt/sources.list
         apt-get update
@@ -18,12 +18,10 @@ dev:
         python /tmp/get-pip.py
         pip install "ansible<2"
         ansible-galaxy install -r ansible-role-requirements.yml
+        ansible-playbook -i ${INVENTORY:-inventory_localhost} deploy.yml -e \
+            @local_vars.yml
     - internal/shell:
-      code: |
-        cwd: /pipeline/source/deploy
-        ANSIBLE_INVENTORY=${INVENTORY:-inventory_localhost}
-        ansible-playbook -i $ANSIBLE_INVENTORY deploy.yml -e @local_vars.yml
-      reload: true
+      code: tail -f /var/log/*
 
 build:
   steps:
