@@ -75,7 +75,7 @@ class RackspaceIdentity(object):
         return user_url
 
     def get_token_url(self):
-        return conf.rackspace_base_url + '/tokens/'
+        return conf.rackspace_base_url + '/tokens'
 
     def _is_in_domain(self, domain, token_data):
         # If the required domain appears in the list of roles (as a project
