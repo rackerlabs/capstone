@@ -32,9 +32,9 @@ class BaseIntegrationTests(testtools.TestCase):
         # Extract credentials so that we can build authentication requests.
         cloud_cfg = cloud_config.OpenStackConfig()
 
-        # Extract authentication information for the Rackspace cloud.
-        rackspace_cloud = cloud_cfg.get_one_cloud('rackspace')
-        rackspace_args = rackspace_cloud.get_auth_args()
+        # Extract authentication information for an identity v2.0 cloud.
+        identity_v2_cloud = cloud_cfg.get_one_cloud('identity_v2')
+        identity_v2_args = identity_v2_cloud.get_auth_args()
 
         # Extract authentication information for the Keystone cloud.
         keystone_cloud = cloud_cfg.get_one_cloud('keystone')
@@ -43,13 +43,13 @@ class BaseIntegrationTests(testtools.TestCase):
         # Store common request information that is used to build and make
         # authentication request.
         self.headers = {'Content-Type': 'application/json'}
-        self.user_id = rackspace_args['user_id']
-        self.username = rackspace_args['username']
-        self.password = rackspace_args['password']
-        self.project_id = rackspace_args['project_id']
-        self.domain_id = rackspace_args['user_domain_id']
-        self.rackspace_token_endpoint = (
-            rackspace_args['auth_url'].rstrip('/') + '/tokens'
+        self.user_id = identity_v2_args['user_id']
+        self.username = identity_v2_args['username']
+        self.password = identity_v2_args['password']
+        self.project_id = identity_v2_args['project_id']
+        self.domain_id = identity_v2_args['user_domain_id']
+        self.identity_v2_token_endpoint = (
+            identity_v2_args['auth_url'].rstrip('/') + '/tokens'
         )
         self.keystone_token_endpoint = (
             keystone_args['auth_url'].rstrip('/') + '/auth/tokens'
@@ -59,8 +59,8 @@ class BaseIntegrationTests(testtools.TestCase):
         )
 
     def assertTokenIsUseable(self, token_id):
-        """Self validate token against the Rackspace v2.0 API."""
-        url = '%s/%s' % (self.rackspace_token_endpoint, token_id)
+        """Self validate token against an identity v2.0 API."""
+        url = '%s/%s' % (self.identity_v2_token_endpoint, token_id)
         headers = self.headers.copy()
         headers['User-Agent'] = 'capstone/0.1'
         headers['X-Auth-Token'] = token_id
