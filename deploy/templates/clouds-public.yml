@@ -1,8 +1,8 @@
 ---
 public-clouds:
-  rackspace:
+  identity_v2:
     auth:
-      auth_url: http://localhost:8080/v2.0/
+      auth_url: {{identity_v2_base_url}}
   capstone:
     auth:
       auth_url: {{capstone_auth_url}}

@@ -69,13 +69,13 @@ class RackspaceIdentity(object):
         self._user_ref = user_ref
 
     def get_user_url(self, user_id=None):
-        user_url = '%s/users' % conf.rackspace_base_url
+        user_url = '%s/users' % conf.identity_v2_base_url
         if user_id:
             return '%s/%s' % (user_url, user_id)
         return user_url
 
     def get_token_url(self):
-        return conf.rackspace_base_url + '/tokens'
+        return conf.identity_v2_base_url + '/tokens'
 
     def _is_in_domain(self, domain, token_data):
         # If the required domain appears in the list of roles (as a project

@@ -1,7 +1,7 @@
 ---
 clouds:
-  rackspace:
-    profile: rackspace
+  identity_v2:
+    profile: identity_v2
     auth:
       domain_id: {{service_user_domain_id}}
       project_id: {{service_user_account_number}}

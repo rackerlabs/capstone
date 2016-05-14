@@ -1,5 +1,5 @@
 [rackspace]
-base_url = rackspace_base_url  # e.g. https://..../v2.0
+base_url = identity_v2_base_url  # e.g. https://..../v2.0
 feed_url = https://example.com/events
 # Polling period in seconds to request new feeds events
 polling_period = 60
