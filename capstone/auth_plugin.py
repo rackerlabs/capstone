@@ -26,17 +26,26 @@ LOG = log.getLogger(__name__)
 METHOD_NAME = 'password'
 
 
+def secure_hash(password):
+    # TODO: lol, make secure
+    return password
+
+
 class RackspaceIdentity(object):
 
     @classmethod
     def from_username(cls, username, password,
                       user_domain_id=None, user_domain_name=None,
                       scope_domain_id=None, scope_project_id=None):
+        admin_client = cls.from_admin_config()
+        token_data = admin_client.authenticate()
+        user_ref = admin_client.get_user_by_name(username, token_data)
         return cls(username, password,
                    user_domain_id=user_domain_id,
                    user_domain_name=user_domain_name,
                    scope_domain_id=scope_domain_id,
-                   scope_project_id=scope_project_id)
+                   scope_project_id=scope_project_id,
+                   user_ref=user_ref)
 
     @classmethod
     def from_user_id(cls, user_id, password,
@@ -55,7 +64,7 @@ class RackspaceIdentity(object):
 
     @classmethod
     def from_admin_config(cls):
-        return cls.from_username(conf.admin_username, conf.admin_password)
+        return cls(conf.admin_username, conf.admin_password)
 
     def __init__(self, username, password,
                  user_domain_id=None, user_domain_name=None,
@@ -145,7 +154,7 @@ class RackspaceIdentity(object):
         LOG.info(_LI('Found user %s in v2.'), user['id'])
         return user
 
-    @cache.memoize
+    @cache.memoize_user
     def get_user(self, user_id):
         token_data = self.authenticate()
         return self._get_user(self.get_user_url(user_id=user_id),
@@ -156,14 +165,13 @@ class RackspaceIdentity(object):
                               token_data['access']['token']['id'],
                               params={'name': username})
 
-    @cache.memoize
-    def _authenticate(self, username, password):
+    def _authenticate(self, username):
         LOG.info(_LI('Authenticating user %s against v2.'), username)
         data = {
             "auth": {
                 "passwordCredentials": {
                     "username": username,
-                    "password": password,
+                    "password": self._password,
                 },
             },
         }
@@ -191,10 +199,29 @@ class RackspaceIdentity(object):
 
         LOG.info(_LI('Successfully authenticated user %s against v2.'),
                  username)
+        self._token_data = token_data
         return token_data
 
     def authenticate(self):
-        return self._authenticate(self._username, self._password)
+        users_password_hash = secure_hash(self._password)
+        if self._user_ref:  # FIXME(dstanek): only needed because of the admin creds
+            cached_data = cache.token_region.get(self._user_ref['id'])
+            if cached_data:
+                cached_password_hash, token_data = cached_data
+                if users_password_hash == cached_password_hash:
+                    return token_data
+
+        token_data = self._authenticate(self._username)
+
+        if self._user_ref:  # FIXME(dstanek): only needed because of the admin creds
+            cache.token_region.set(
+                self._user_ref['id'],
+                (users_password_hash, token_data))
+            cache.token_map_region.set(
+                token_data['access']['token']['id'],
+                self._user_ref['id'])
+
+        return token_data
 
 
 class Password(auth.AuthMethodHandler):
