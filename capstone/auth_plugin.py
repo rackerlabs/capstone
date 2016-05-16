@@ -77,6 +77,7 @@ class RackspaceIdentity(object):
         self._scope_domain_id = scope_domain_id
         self._scope_project_id = scope_project_id
         self._user_ref = user_ref
+        self._token_data = None
 
     def get_user_url(self, user_id=None):
         user_url = '%s/users' % conf.rackspace_base_url
@@ -161,6 +162,7 @@ class RackspaceIdentity(object):
                               token_data['access']['token']['id'])
 
     def get_user_by_name(self, username, token_data):
+        token_data = self.authenticate()
         return self._get_user(self.get_user_url(),
                               token_data['access']['token']['id'],
                               params={'name': username})
@@ -181,6 +183,7 @@ class RackspaceIdentity(object):
             json=data)
         resp.raise_for_status()
         token_data = resp.json()
+        self._token_data = token_data
 
         # Retrieve user to check/populate user's domain
         if not self._user_ref:
@@ -199,10 +202,12 @@ class RackspaceIdentity(object):
 
         LOG.info(_LI('Successfully authenticated user %s against v2.'),
                  username)
-        self._token_data = token_data
         return token_data
 
     def authenticate(self):
+        if self._token_data:
+            return self._token_data
+
         users_password_hash = secure_hash(self._password)
         if self._user_ref:  # FIXME(dstanek): only needed because of the admin creds
             cached_data = cache.token_region.get(self._user_ref['id'])
