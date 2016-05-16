@@ -161,6 +161,36 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
         })
         self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
+    def test_with_empty_username(self):
+        data = generate_password_auth_data({
+            "name": '',
+            "password": self.password,
+            "domain": {"id": self.domain_id},
+        })
+        self.authenticate(data, expected_status=httplib.BAD_REQUEST)
+
+    def test_with_empty_password(self):
+        data = generate_password_auth_data({
+            "name": self.username,
+            "password": '',
+            "domain": {"id": self.domain_id},
+        })
+        self.authenticate(data, expected_status=httplib.BAD_REQUEST)
+
+    def test_with_no_password(self):
+        data = generate_password_auth_data({
+            "name": self.username,
+            "domain": {"id": self.domain_id},
+        })
+        self.authenticate(data, expected_status=httplib.BAD_REQUEST)
+
+    def test_with_no_username(self):
+        data = generate_password_auth_data({
+            "password": self.password,
+            "domain": {"id": self.domain_id},
+        })
+        self.authenticate(data, expected_status=httplib.BAD_REQUEST)
+
     def test_with_username_and_incorrect_domain_id(self):
         data = generate_password_auth_data({
             "name": self.username,
