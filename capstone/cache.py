@@ -16,9 +16,17 @@ from oslo_config import cfg
 from capstone import conf
 
 
-CAPSTONE_REGION = oslo_cache.create_region()
-oslo_cache.configure_cache_region(cfg.CONF, CAPSTONE_REGION)
+user_region = oslo_cache.create_region()
+oslo_cache.configure_cache_region(cfg.CONF, user_region)
+
+token_region = oslo_cache.create_region()
+oslo_cache.configure_cache_region(cfg.CONF, token_region)
+token_region.expiration_time = 23.5 * 60
+
+token_map_region = oslo_cache.create_region()
+oslo_cache.configure_cache_region(cfg.CONF, token_map_region)
+token_map_region.expiration_time = 25 * 60
 
 config_group = 'cache'
-memoize = oslo_cache.get_memoization_decorator(
-    conf.CONF, CAPSTONE_REGION, config_group)
+memoize_user = oslo_cache.get_memoization_decorator(
+    conf.CONF, user_region, config_group)
