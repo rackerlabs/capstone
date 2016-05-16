@@ -127,6 +127,10 @@ class RackspaceIdentity(object):
             msg = resp.json()['unauthorized']['message']
             LOG.info(msg)
             raise exception.Unauthorized(msg)
+        elif resp.status_code == requests.codes.bad_request:
+            msg = resp.json()['badRequest']['message']
+            LOG.info(msg)
+            raise exception.ValidationError(msg)
 
         LOG.info(resp.text)
         raise exception.UnexpectedError(resp.text)
@@ -250,8 +254,25 @@ class Password(auth.AuthMethodHandler):
         auth_params = context['environment']['openstack.params']['auth']
         return auth_params.get('scope', {})
 
+    def _validate_auth_data(self, auth_payload):
+        """Validate authentication payload."""
+        if 'user' not in auth_payload:
+            raise exception.ValidationError(attribute='user', target='auth')
+        user_info = auth_payload['user']
+        user_id = user_info.get('id')
+        user_name = user_info.get('name')
+        user_password = user_info.get('password')
+        if not user_id and not user_name:
+            raise exception.ValidationError(attribute='id or name',
+                                            target='user')
+        if not user_password:
+            raise exception.ValidationError(attribute='password',
+                                            target='user')
+
     def authenticate(self, context, auth_payload, auth_context):
         """Try to authenticate against the identity backend."""
+        self._validate_auth_data(auth_payload)
+
         user_domain_id = auth_payload['user'].get('domain', {}).get('id')
         user_domain_name = auth_payload['user'].get('domain', {}).get('name')
 
