@@ -18,6 +18,7 @@ import requests
 
 from capstone import conf
 from capstone import const
+from capstone import exception as capstone_exception
 
 
 LOG = log.getLogger(__name__)
@@ -131,6 +132,14 @@ class RackspaceIdentity(object):
             msg = resp.json()['badRequest']['message']
             LOG.info(msg)
             raise exception.ValidationError(msg)
+        elif resp.status_code == requests.codes.bad_gateway:
+            msg = 'Capstone failed to connect to v2.'
+            LOG.info(msg)
+            raise capstone_exception.BadGateway(msg)
+        elif resp.status_code == requests.codes.timeout:
+            msg = 'Timeout occur connecting to v2.'
+            LOG.info(msg)
+            raise capstone_exception.RequestTimeout(msg)
 
         LOG.info(resp.text)
         raise exception.UnexpectedError(resp.text)
