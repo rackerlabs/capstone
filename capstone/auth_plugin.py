@@ -18,6 +18,7 @@ import requests
 
 from capstone import conf
 from capstone import const
+from capstone import exception as capstone_exception
 
 
 LOG = log.getLogger(__name__)
@@ -71,7 +72,6 @@ class RackspaceIdentity(object):
         self._scope_project_id = scope_project_id
         self._user_ref = user_ref
 
-        self.session = requests.Session()
         self.auth_token = None
 
     def url(self, path):
@@ -89,7 +89,12 @@ class RackspaceIdentity(object):
         headers = {
             'X-Auth-Token': self.auth_token,
             'Accept': 'application/json'}
-        resp = requests.get(url, headers=headers, params=params)
+
+        try:
+            resp = requests.get(url, headers=headers, params=params)
+        except requests.exceptions.RequestException as e:
+            LOG.info(e.message)
+            raise capstone_exception.BadGateway(e.message)
 
         if resp.status_code == requests.codes.ok:
             return resp.json()
@@ -108,10 +113,12 @@ class RackspaceIdentity(object):
             'Accept': 'application/json',
             'Content-Type': 'application/json',
         }
-        resp = requests.post(
-            url,
-            headers=headers,
-            json=data)
+
+        try:
+            resp = requests.post(url, headers=headers, json=data)
+        except requests.exceptions.RequestException as e:
+            LOG.info(e.message)
+            raise capstone_exception.BadGateway(e.message)
 
         if resp.status_code == expected_status:
             return resp.json()
