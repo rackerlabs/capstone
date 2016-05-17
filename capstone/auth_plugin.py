@@ -118,6 +118,13 @@ class RackspaceIdentity(object):
 
         self.handle_unexpected_response(resp)
 
+    def _exception(self, title, code, message=None):
+        """Create custom exception."""
+        ex = exception.Error
+        ex.title = title
+        ex.code = code
+        return ex
+
     def handle_unexpected_response(self, resp):
         if resp.status_code == requests.codes.not_found:
             msg = resp.json()['itemNotFound']['message']
@@ -131,6 +138,16 @@ class RackspaceIdentity(object):
             msg = resp.json()['badRequest']['message']
             LOG.info(msg)
             raise exception.ValidationError(msg)
+        elif resp.status_code == requests.codes.bad_gateway:
+            msg = 'Capstone failed to connect to v2.'
+            LOG.info(msg)
+            bad_gateway_ex = self._exception('Bad Gateway', 502)
+            raise bad_gateway_ex(msg)
+        elif resp.status_code == requests.codes.timeout:
+            msg = 'Timeout occur connecting to v2.'
+            LOG.info(msg)
+            timeout_ex = self._exception('Request Time-out', 408)
+            raise timeout_ex(msg)
 
         LOG.info(resp.text)
         raise exception.UnexpectedError(resp.text)
