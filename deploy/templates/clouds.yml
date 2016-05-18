@@ -3,7 +3,6 @@ clouds:
   rackspace:
     profile: rackspace
     auth:
-      domain_id: {{service_user_domain_id}}
       project_id: {{service_user_account_number}}
       user_id: {{service_user_id}}
       username: {{service_user_name}}
