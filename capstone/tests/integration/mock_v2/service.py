@@ -12,12 +12,14 @@ and tenant names, and a user's tenancy will match their domain ID.
 
 import datetime
 import hashlib
+import json
+import uuid
 
 import flask
 from flask import request
 
 
-app = flask.Flask('v2')
+application = flask.Flask('v2')
 
 
 def hash_str(*args):
@@ -25,7 +27,20 @@ def hash_str(*args):
     return hashlib.sha1(''.join(args)).hexdigest()
 
 
-@app.route('/v2.0/users', methods=['GET'])
+def unauthorized():
+    """Return a 401 Unauthorized response."""
+    response = flask.json.jsonify(**{
+        "unauthorized": {
+            "message": "Unable to authenticate user with credentials"
+                       " provided.",
+            "code": 401
+        }
+    })
+    response.status_code = 401
+    return response
+
+
+@application.route('/v2.0/users', methods=['GET'])
 def list_users():
     """List users (but really get user by name)."""
     username = request.args.get('name')
@@ -49,7 +64,7 @@ def list_users():
     })
 
 
-@app.route('/v2.0/users/<user_id>', methods=['GET'])
+@application.route('/v2.0/users/<user_id>', methods=['GET'])
 def get_user_by_id(user_id):
     return flask.json.jsonify(**{
         "user": {
@@ -63,7 +78,7 @@ def get_user_by_id(user_id):
     })
 
 
-@app.route('/v2.0/tokens', methods=['POST'])
+@application.route('/v2.0/tokens', methods=['POST'])
 def authenticate():
     username = request.json['auth']['passwordCredentials']['username']
     password = request.json['auth']['passwordCredentials']['password']
@@ -71,21 +86,29 @@ def authenticate():
     # Authentication is valid if the password is the SHA1 hexdigest of the
     # username.
     if hash_str(username) != password:
-        response = flask.json.jsonify(**{
-            "unauthorized": {
-                "message": "Unable to authenticate user with credentials"
-                           " provided.",
-                "code": 401
-            }
-        })
-        response.status_code = 401
-        return response
+        return unauthorized()
 
+    token_id = uuid.uuid4().hex
     tenant_id = hash_str('account_id', username)
 
-    return flask.json.jsonify(**{
+    five_minutes = datetime.timedelta(minutes=5)
+    expires = datetime.datetime.utcnow() + five_minutes
+
+    body = {
         "access": {
             "serviceCatalog": [
+                {
+                    "endpoints": [
+                        {
+                            "publicURL":
+                                "https://identity.api.rackspacecloud.com/v2.0",
+                            "region": "ORD",
+                            "tenantId": tenant_id
+                        }
+                    ],
+                    "name": "Cloud Auth Service",
+                    "type": "identity"
+                },
                 {
                     "endpoints": [
                         {
@@ -167,8 +190,8 @@ def authenticate():
                 "RAX-AUTH:authenticatedBy": [
                     "PASSWORD"
                 ],
-                "expires": '%sZ' % datetime.datetime.utcnow().isoformat()[:-3],
-                "id": hash_str('token', username),
+                "expires": '%sZ' % expires.isoformat()[:-3],
+                "id": token_id,
                 "tenant": {
                     "id": tenant_id,
                     "name": tenant_id
@@ -194,4 +217,21 @@ def authenticate():
                 ]
             }
         }
-    })
+    }
+
+    with open('/tmp/%s' % token_id, 'w') as f:
+        f.write(json.dumps(body))
+
+    return flask.json.jsonify(**body)
+
+
+@application.route('/v2.0/tokens/<token_id>', methods=['GET'])
+def validate(token_id):
+    try:
+        with open('/tmp/%s' % token_id, 'r') as f:
+            body = json.loads(f.read())
+        # TODO(dstanek): Maybe have this check expiration if we have tests that
+        # depend on that.
+        return flask.json.jsonify(**body)
+    except IOError:
+        return unauthorized()
