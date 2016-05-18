@@ -12,6 +12,7 @@ and tenant names, and a user's tenancy will match their domain ID.
 
 import datetime
 import hashlib
+import uuid
 
 import flask
 from flask import request
@@ -19,10 +20,25 @@ from flask import request
 
 app = flask.Flask('v2')
 
+TOKEN_CACHE = dict()
+
 
 def hash_str(*args):
     """Hash the specified values together to provide predictable responses."""
     return hashlib.sha1(''.join(args)).hexdigest()
+
+
+def unauthorized():
+    """Return a 401 Unauthorized response."""
+    response = flask.json.jsonify(**{
+        "unauthorized": {
+            "message": "Unable to authenticate user with credentials"
+                       " provided.",
+            "code": 401
+        }
+    })
+    response.status_code = 401
+    return response
 
 
 @app.route('/v2.0/users', methods=['GET'])
@@ -71,21 +87,29 @@ def authenticate():
     # Authentication is valid if the password is the SHA1 hexdigest of the
     # username.
     if hash_str(username) != password:
-        response = flask.json.jsonify(**{
-            "unauthorized": {
-                "message": "Unable to authenticate user with credentials"
-                           " provided.",
-                "code": 401
-            }
-        })
-        response.status_code = 401
-        return response
+        return unauthorized()
 
+    token_id = uuid.uuid4().hex
     tenant_id = hash_str('account_id', username)
 
-    return flask.json.jsonify(**{
+    five_minutes = datetime.timedelta(minutes=5)
+    expires = datetime.datetime.utcnow() + five_minutes
+
+    TOKEN_CACHE[token_id] = {
         "access": {
             "serviceCatalog": [
+                {
+                    "endpoints": [
+                        {
+                            "publicURL":
+                                "https://identity.api.rackspacecloud.com/v2.0",
+                            "region": "ORD",
+                            "tenantId": tenant_id
+                        }
+                    ],
+                    "name": "Cloud Auth Service",
+                    "type": "identity"
+                },
                 {
                     "endpoints": [
                         {
@@ -167,8 +191,8 @@ def authenticate():
                 "RAX-AUTH:authenticatedBy": [
                     "PASSWORD"
                 ],
-                "expires": '%sZ' % datetime.datetime.utcnow().isoformat()[:-3],
-                "id": hash_str('token', username),
+                "expires": '%sZ' % expires.isoformat()[:-3],
+                "id": token_id,
                 "tenant": {
                     "id": tenant_id,
                     "name": tenant_id
@@ -194,4 +218,16 @@ def authenticate():
                 ]
             }
         }
-    })
+    }
+
+    return flask.json.jsonify(**TOKEN_CACHE[token_id])
+
+
+@app.route('/v2.0/tokens/<token_id>', methods=['GET'])
+def validate(token_id):
+    if token_id not in TOKEN_CACHE:
+        return unauthorized()
+
+    # TODO(dstanek): maybe have this check expiration if
+    # we have tests that depend on this
+    return flask.json.jsonify(**TOKEN_CACHE[token_id])
