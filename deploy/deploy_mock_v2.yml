@@ -1,0 +1,19 @@
+---
+
+- name: Deploy mock v2 service
+  hosts: keystone_all
+  tasks:
+    - name: Install pip requirements
+      pip:
+        name=flask
+
+    - name: Drop apache configuration
+      template:
+        src=templates/etc/apache2/sites-enabled/mock-v2.conf
+        dest=/etc/apache2/sites-enabled/mock-v2.conf
+        mode=0744
+
+    - name: Restart apache
+      service:
+        name=apache2
+        state=restarted
