@@ -18,7 +18,7 @@ import flask
 from flask import request
 
 
-app = flask.Flask('v2')
+application = flask.Flask('v2')
 
 TOKEN_CACHE = dict()
 
@@ -41,7 +41,7 @@ def unauthorized():
     return response
 
 
-@app.route('/v2.0/users', methods=['GET'])
+@application.route('/v2.0/users', methods=['GET'])
 def list_users():
     """List users (but really get user by name)."""
     username = request.args.get('name')
@@ -65,7 +65,7 @@ def list_users():
     })
 
 
-@app.route('/v2.0/users/<user_id>', methods=['GET'])
+@application.route('/v2.0/users/<user_id>', methods=['GET'])
 def get_user_by_id(user_id):
     return flask.json.jsonify(**{
         "user": {
@@ -79,7 +79,7 @@ def get_user_by_id(user_id):
     })
 
 
-@app.route('/v2.0/tokens', methods=['POST'])
+@application.route('/v2.0/tokens', methods=['POST'])
 def authenticate():
     username = request.json['auth']['passwordCredentials']['username']
     password = request.json['auth']['passwordCredentials']['password']
@@ -223,7 +223,7 @@ def authenticate():
     return flask.json.jsonify(**TOKEN_CACHE[token_id])
 
 
-@app.route('/v2.0/tokens/<token_id>', methods=['GET'])
+@application.route('/v2.0/tokens/<token_id>', methods=['GET'])
 def validate(token_id):
     if token_id not in TOKEN_CACHE:
         return unauthorized()
