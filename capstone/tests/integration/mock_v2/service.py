@@ -19,6 +19,8 @@ from flask import request
 
 app = flask.Flask('v2')
 
+TOKEN_CACHE = set()
+
 
 def hash_str(*args):
     """Hash the specified values together to provide predictable responses."""
@@ -81,11 +83,28 @@ def authenticate():
         response.status_code = 401
         return response
 
+    token_id = hash_str('token', username)
+    TOKEN_CACHE.add(token_id)
     tenant_id = hash_str('account_id', username)
+
+    five_minutes = datetime.timedelta(minutes=5)
+    expires = datetime.datetime.utcnow() + five_minutes
 
     return flask.json.jsonify(**{
         "access": {
             "serviceCatalog": [
+                {
+                    "endpoints": [
+                        {
+                            "publicURL":
+                                "https://identity.api.rackspacecloud.com/v2.0",
+                            "region": "ORD",
+                            "tenantId": tenant_id
+                        }
+                    ],
+                    "name": "Cloud Auth Service",
+                    "type": "identity"
+                },
                 {
                     "endpoints": [
                         {
@@ -167,8 +186,8 @@ def authenticate():
                 "RAX-AUTH:authenticatedBy": [
                     "PASSWORD"
                 ],
-                "expires": '%sZ' % datetime.datetime.utcnow().isoformat()[:-3],
-                "id": hash_str('token', username),
+                "expires": '%sZ' % expires.isoformat()[:-3],
+                "id": token_id,
                 "tenant": {
                     "id": tenant_id,
                     "name": tenant_id
@@ -195,3 +214,27 @@ def authenticate():
             }
         }
     })
+
+
+def validate(environ, start_response):
+    # TODO(dstanek): maybe have this check expiration if
+    # we have tests that depend on this
+    token_id = environ['wsgi.match'].groups()[0]
+    if token_id not in TOKEN_CACHE:
+        status = '401 Unauthorized'
+        data = json.dumps({
+            "unauthorized": {
+                "message": "Unable to authenticate user with credentials"
+                           " provided.",
+                "code": 401
+            }
+        })
+    else:
+        status = '200 OK'
+        # TODO(dstanek): figure out what this should be
+        data = json.dumps({'msg': 'woot'})
+
+    start_response(status, [APP_JSON])
+    return [data]
+
+
