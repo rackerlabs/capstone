@@ -5,6 +5,7 @@ localhost ansible_connection=local
 service_user_name = $SERVICE_USER_NAME
 service_user_password = $SERVICE_USER_PASSWORD
 rackspace_base_url = $RACKSPACE_BASE_URL
+# what should we do with these?
 service_user_id = admin
 service_user_domain_id = admin
 service_user_account_number = admin

@@ -1,0 +1,10 @@
+---
+
+# This file contains the variables needed for Capstone to run integration
+# tests.
+service_user_name: "test"
+service_user_password: "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3"
+service_user_id: "test"
+service_user_domain_id: "41771bab6f6cd4f3a78eaf624c777ad6aeb678ae"
+service_user_account_number: "41771bab6f6cd4f3a78eaf624c777ad6aeb678ae"
+capstone_auth_url: "https://localhost:8443/v3/"

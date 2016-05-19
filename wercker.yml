@@ -76,6 +76,7 @@ build:
       code: |
         ansible-playbook \
             -i $ANSIBLE_INVENTORY \
+            -e @testing_vars.yml \
             setup_integration_test_host.yml
     - script:
       name: Run tests
