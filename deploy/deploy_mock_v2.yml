@@ -7,6 +7,21 @@
       pip:
         name=flask
 
+    - name: Create directory for source
+      file:
+        path=/opt/mock_v2/
+        state=directory
+        owner=keystone
+        group=keystone
+
+    - name: Install mock_v2 source
+      template:
+        src=../capstone/tests/integration/mock_v2/service.py
+        dest=/opt/mock_v2/service.py
+        owner=keystone
+        group=keystone
+        mode=0755
+
     - name: Drop apache configuration
       template:
         src=templates/etc/apache2/sites-enabled/mock-v2.conf
