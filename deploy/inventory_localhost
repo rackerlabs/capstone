@@ -6,11 +6,5 @@ service_user_name = test
 service_user_password = a94a8fe5ccb19ba61c4c0873d391e987982fbbd3
 rackspace_base_url = http://localhost:8080/v2.0/
 
-# Used for deploying specific build versions from a pypi server
-# capstone_version = capstone-9e57f73
-# venv_location = http://localhost/
-# pypi_server = https://pypi.python.org/simple/
-# trusted_pypi = https://pypi.python.org
-
 # Plight PPA
 plight_repository = 'deb http://ppa.launchpad.net/gregswift/plight/ubuntu trusty main'
