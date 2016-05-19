@@ -157,7 +157,7 @@ def start(sc, client):
     for entry in client.entries:
         event = Entry(entry)
         event.invalidate()
-    sc.enter(int(CONF.rackspace.polling_period), 1, start, (sc, client))
+    sc.enter(CONF.rackspace.polling_period, 1, start, (sc, client))
 
 
 def main():

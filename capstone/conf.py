@@ -27,8 +27,9 @@ CONF.register_opt(
                help='URL used for reading identity feed events.'),
     group='rackspace')
 CONF.register_opt(
-    cfg.StrOpt('polling_period',
-               help='Polling period in seconds to read identity feed events.'),
+    cfg.IntOpt('polling_period',
+               help='Polling period in seconds to read identity feed events.',
+               default=60),
     group='rackspace')
 CONF.register_opt(
     cfg.StrOpt('username',
