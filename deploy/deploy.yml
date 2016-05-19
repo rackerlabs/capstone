@@ -13,6 +13,8 @@
     # NOTE(lbragstad): These variables are required regardless if we're
     # deploying venvs to staging/production or if we're installing from
     # source locally.
+    keystone_requirements_git_repo: https://github.com/openstack/requirements.git
+    keystone_git_repo: https://github.com/openstack/keystone.git
     keystone_git_install_branch: stable/mitaka
     keystone_database_enabled: false
     keystone_service_setup: false
