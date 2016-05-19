@@ -59,3 +59,7 @@ build:
       name: Run capstone integration tests
       cwd: /pipeline/source/
       code: tox -e integration
+  after-steps:
+    - script:
+      name: Reveal error logs (useful for debugging failures)
+      code: tail -n 100 /var/log/apache2/* /var/log/keystone/*
