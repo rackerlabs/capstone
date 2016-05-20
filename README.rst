@@ -147,6 +147,9 @@ Unit tests can be run in a local development environment using `tox
 
     tox
 
+Running ``tox`` without specifying an environment will execute all testing
+environments, including unit tests, integration tests, and syntax linting.
+
 Integration tests
 ~~~~~~~~~~~~~~~~~
 
@@ -202,7 +205,8 @@ The second file is ``~/.config/openstack/clouds-public.yaml``::
 
 The integration test will use ``os-cloud-config`` to parse these files to build
 requests to make against both the Rackspace endpoint and the Keystone endpoint.
-The tests can be run through ``tox``::
+The integration tests can be run through ``tox`` by specifying the
+``integration`` environment specifically, or by just running ``tox``::
 
     tox -e integration
 
