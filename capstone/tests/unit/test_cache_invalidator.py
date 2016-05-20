@@ -36,8 +36,6 @@ class TestCloudFeedClient(testtools.TestCase):
                                    base_url=self.example_url)
         self.config_fixture.config(group='rackspace',
                                    feed_url=self.example_url)
-        self.config_fixture.config(group='rackspace',
-                                   polling_period=60)
         self.config_fixture.config(group='service_admin',
                                    username='username')
         self.config_fixture.config(group='service_admin',
