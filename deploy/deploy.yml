@@ -20,6 +20,7 @@
     keystone_database_connection_string: none
     keystone_public_endpoint: "https://identity.api.rackspacecloud.com"
     keystone_service_adminuri: "https://identity.api.rackspacecloud.com"
+    keystone_cache_backend_argument: url:127.0.0.1:11211
     internal_lb_vip_address: localhost
     keystone_auth_admin_token: none
     keystone_rabbitmq_password: none
