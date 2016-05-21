@@ -91,7 +91,8 @@ class RackspaceIdentity(object):
             'Accept': 'application/json'}
 
         try:
-            resp = requests.get(url, headers=headers, params=params)
+            resp = requests.get(url, headers=headers, params=params,
+                                timeout=conf.request_timeout)
         except requests.exceptions.RequestException as e:
             LOG.info(e.message)
             raise capstone_exception.BadGateway(e.message)
@@ -115,10 +116,11 @@ class RackspaceIdentity(object):
         }
 
         try:
-            resp = requests.post(url, headers=headers, json=data)
+            resp = requests.post(url, headers=headers, json=data,
+                                 timeout=conf.request_timeout)
         except requests.exceptions.RequestException as e:
             LOG.info(e.message)
-            raise capstone_exception.BadGateway(e.message)
+            raise capstone_exception.BadGateway()
 
         if resp.status_code == expected_status:
             return resp.json()

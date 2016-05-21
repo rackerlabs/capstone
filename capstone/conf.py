@@ -23,6 +23,10 @@ CONF.register_opt(
                help='Base URL to be used to build v2 Identity URLs.'),
     group='rackspace')
 CONF.register_opt(
+    cfg.FloatOpt('request_timeout',
+               help='Timeout for request made against v2 Identity.'),
+    group='rackspace')
+CONF.register_opt(
     cfg.StrOpt('feed_url',
                help='URL used for reading identity feed events.'),
     group='rackspace')
@@ -63,3 +67,4 @@ admin_username = CONF.service_admin.username
 admin_password = CONF.service_admin.password
 admin_project_id = CONF.service_admin.project_id
 rackspace_base_url = CONF.rackspace.base_url.rstrip('/')
+request_timeout = CONF.rackspace.request_timeout
