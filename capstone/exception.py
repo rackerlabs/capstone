@@ -14,5 +14,6 @@ from keystone import exception
 
 
 class BadGateway(exception.Error):
+    message_format = 'Failed to connect to v2.'
     code = 502
     title = 'Bad Gateway'
