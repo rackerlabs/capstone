@@ -1,13 +1,5 @@
 ---
 
-- name: Add apt key for plight
-  apt_key:
-    id: "{{ plight_hash_id }}"
-    keyserver: "{{ plight_keyserver }}"
-    state: "present"
-  when: not keystone_developer_mode | bool
-  tags:
-    - capstone
 - name: Add plight repository
   apt_repository:
     repo: "{{ plight_repository }}"
@@ -22,5 +14,12 @@
     force: yes
   retries: 5
   delay: 2
+  tags:
+    - capstone
+- name: Ensure plight is running
+  service:
+    name: plightd
+    status: started
+    enabled: yes
   tags:
     - capstone
