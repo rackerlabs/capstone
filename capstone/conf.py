@@ -48,7 +48,7 @@ CONF.register_opt(
                      'effect unless global caching is enabled.'),
     group='capstone')
 CONF.register_opt(
-    cfg.IntOpt('cache_time', default=600,
+    cfg.IntOpt('cache_time', default=60,
                help='Time to cache capstone data (in seconds). This has '
                     'no effect unless global and capstone caching are '
                     'enabled.'),
