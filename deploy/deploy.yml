@@ -6,7 +6,10 @@
     - pip_install
     - os_keystone
   post_tasks:
+    - stat: path=/usr/bin/plight
+      register: plight
     - include: tasks/install_plight.yml
+      when: not plight.stat.exists
     - include: tasks/capstone_local_install.yml
     - include: tasks/capstone_post_tasks.yml
   vars:
