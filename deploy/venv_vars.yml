@@ -54,11 +54,8 @@ pip_links:
   - name: internal
     link: "{{ pypi_server }}"
 
-# plight_keyserver, plight_hash_id: We need to be able to override these so we
-# can install plight on environments that don't have access to the outside
-# world.
-plight_keyserver: "{{ plight_keyserver }}"
-plight_hash_id: "{{ plight_hash_id }}"
+# plight_repo: This should point to the mirror where we keep plight.
+plight_repo: "{{ plight_ppa }}"
 
 # external_lb_vip_address, internal_lb_vip_address: We need to be able to
 # override these from inventory when we deploy against staging and production

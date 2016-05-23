@@ -5,3 +5,4 @@
 keystone_developer_mode: true
 external_lb_vip_address: "localhost"
 internal_lb_vip_address: "localhost"
+plight_repo: 'deb http://ppa.launchpad.net/gregswift/plight/ubuntu trusty main'
