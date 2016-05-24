@@ -72,7 +72,7 @@ class RackspaceIdentity(object):
     def __init__(self, username, password,
                  user_domain_id=None, user_domain_name=None,
                  scope_domain_id=None, scope_project_id=None,
-                 user_ref=None):
+                 user_ref=None, x_forwarded_for=None):
         self._username = username
         self._password = password
         self._user_domain_id = user_domain_id
@@ -80,6 +80,7 @@ class RackspaceIdentity(object):
         self._scope_domain_id = scope_domain_id
         self._scope_project_id = scope_project_id
         self._user_ref = user_ref
+        self._x_forwarded_for = x_forwarded_for
         self._token_data = None
 
         self.auth_token = None
@@ -119,6 +120,8 @@ class RackspaceIdentity(object):
             'Accept': 'application/json',
             'Content-Type': 'application/json',
         }
+        if self._x_forwarded_for:
+            headers['X-Forwarded-For'] = self._x_forwarded_for
         resp = requests.post(
             url,
             headers=headers,
@@ -192,18 +195,6 @@ class RackspaceIdentity(object):
             raise exception.Unauthorized(msg)
         LOG.info(_LI('User %(u_name)s can scope to project %(p_id)s.'),
                  {'u_name': self._username, 'p_id': self._scope_project_id})
-
-    def _update_headers_with_x_forwarded_for_header(
-            self, headers, context=None):
-        if not context:
-            return
-
-        if 'x-forwarded-for' not in context.get('header', []):
-            headers['X-Forwarded-For'] = context['environment']['REMOTE_ADDR']
-        else:
-            headers['X-Forwarded-For'] = '{0}, {1}'.format(
-                context['header']['x-forwarded-for'],
-                context['environment']['REMOTE_ADDR'])
 
     @cache.memoize_user
     def _get_user(self, path, params=None):
@@ -301,6 +292,7 @@ class Password(auth.AuthMethodHandler):
 
         username = auth_payload['user'].get('name')
 
+        x_forwarded_for = self._determine_x_forwarded_for_header(context)
         try:
             if not username:
                 identity = RackspaceIdentity.from_user_id(
@@ -309,7 +301,8 @@ class Password(auth.AuthMethodHandler):
                     user_domain_id=user_domain_id,
                     user_domain_name=user_domain_name,
                     scope_domain_id=scope_domain_id,
-                    scope_project_id=scope_project_id)
+                    scope_project_id=scope_project_id,
+                    x_forwarded_for=x_forwarded_for)
             else:
                 identity = RackspaceIdentity.from_username(
                     username,
@@ -317,8 +310,9 @@ class Password(auth.AuthMethodHandler):
                     user_domain_id=user_domain_id,
                     user_domain_name=user_domain_name,
                     scope_domain_id=scope_domain_id,
-                    scope_project_id=scope_project_id)
-            token_data = identity.authenticate(context)
+                    scope_project_id=scope_project_id,
+                    x_forwarded_for=x_forwarded_for)
+            token_data = identity.authenticate()
 
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 401:
@@ -327,3 +321,14 @@ class Password(auth.AuthMethodHandler):
 
         auth_context['user_id'] = token_data['access']['user']['id']
         auth_context[const.TOKEN_RESPONSE] = token_data
+
+    def _determine_x_forwarded_for_header(self, context):
+        if not context:
+            return
+
+        if 'x-forwarded-for' not in context.get('header', []):
+            return context['environment']['REMOTE_ADDR']
+        else:
+            return '{0}, {1}'.format(
+                context['header']['x-forwarded-for'],
+                context['environment']['REMOTE_ADDR'])
