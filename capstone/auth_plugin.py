@@ -67,6 +67,7 @@ class RackspaceIdentity(object):
         self._scope_domain_id = scope_domain_id
         self._scope_project_id = scope_project_id
         self._user_ref = user_ref
+        self._token_data = None
 
     def get_user_url(self, user_id=None):
         user_url = '%s/users' % conf.rackspace_base_url
@@ -140,7 +141,8 @@ class RackspaceIdentity(object):
                 context['header']['x-forwarded-for'],
                 context['environment']['REMOTE_ADDR'])
 
-    def _get_user(self, url, token, params=None):
+    def _get_user(self, url, params=None):
+        token = self._token_data['access']['token']['id']
         headers = const.HEADERS.copy()
         headers['X-Auth-Token'] = token
 
@@ -157,14 +159,11 @@ class RackspaceIdentity(object):
         return user
 
     def get_user(self, user_id):
-        token_data = self.authenticate()
-        return self._get_user(self.get_user_url(user_id=user_id),
-                              token_data['access']['token']['id'])
+        self.authenticate()
+        return self._get_user(self.get_user_url(user_id=user_id))
 
-    def get_user_by_name(self, username, token_data):
-        return self._get_user(self.get_user_url(),
-                              token_data['access']['token']['id'],
-                              params={'name': username})
+    def get_user_by_name(self, username):
+        return self._get_user(self.get_user_url(), params={'name': username})
 
     def authenticate(self, context=None):
         headers = const.HEADERS.copy()
@@ -184,26 +183,27 @@ class RackspaceIdentity(object):
             headers=headers,
             json=data)
         resp.raise_for_status()
-        token_data = resp.json()
+        self._token_data = resp.json()
 
         # Retrieve user to check/populate user's domain
         if not self._user_ref:
-            self._user_ref = self.get_user_by_name(self._username, token_data)
+            self._user_ref = self.get_user_by_name(self._username)
 
         if self._user_domain_id or self._user_domain_name:
-            self._assert_user_domain(token_data)
+            self._assert_user_domain(self._token_data)
 
-        self._populate_user_domain(token_data)
+        self._populate_user_domain(self._token_data)
 
         if self._scope_domain_id:
-            self._assert_domain_scope(token_data)
+            self._assert_domain_scope(self._token_data)
 
         if self._scope_project_id:
-            self._assert_project_scope(token_data)
+            self._assert_project_scope(self._token_data)
 
         LOG.info(_LI('Successfully authenticated user %s against v2.'),
                  self._username)
-        return token_data
+
+        return self._token_data
 
 
 class Password(auth.AuthMethodHandler):
