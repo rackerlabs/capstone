@@ -242,8 +242,7 @@ Deployment tooling lives in the ``deploy/`` directory and uses `ansible
 Prior to deploying capstone, specific upstream dependencies need to be
 resolved. To resolve these using ``ansible-galaxy`` run the following::
 
-    ansible-galaxy install --role-file=ansible-role-requirements.yml \
-                           --ignore-errors --force
+    ansible-galaxy install --role-file=ansible-role-requirements.yml --force
 
 The ``deploy.yml`` playbook will expect an inventory file which will look
 like::
