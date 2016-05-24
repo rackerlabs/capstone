@@ -223,10 +223,6 @@ class RackspaceIdentity(object):
         token_data = resp.json()
         self._token_data = token_data
 
-        # Retrieve user to check/populate user's domain
-        if not self._user_ref:
-            self._user_ref = self.get_user_by_name(username)
-
         if self._user_domain_id or self._user_domain_name:
             self._assert_user_domain(token_data)
 
