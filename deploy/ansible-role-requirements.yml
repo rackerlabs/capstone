@@ -4,29 +4,29 @@
   src: https://github.com/openstack/openstack-ansible-plugins
   path: /etc/ansible
   scm: git
-  version: 13.0.1
+  version: 13.1.0
 - name: apt_package_pinning
   src: >-
     https://github.com/openstack/openstack-ansible-apt_package_pinning
   scm: git
-  version: 13.0.1
+  version: 13.1.0
 - name: pip_install
   src: https://github.com/openstack/openstack-ansible-pip_install
   scm: git
-  version: 13.0.1
+  version: 13.1.0
 - name: pip_lock_down
   src: https://github.com/openstack/openstack-ansible-pip_lock_down
   scm: git
-  version: 13.0.1
+  version: 13.1.0
 - name: memcached_server
   src: https://github.com/openstack/openstack-ansible-memcached_server
   scm: git
-  version: 13.0.1
+  version: 13.1.0
 - name: galera_client
   src: https://github.com/openstack/openstack-ansible-galera_client
   scm: git
-  version: 13.0.1
+  version: 13.1.0
 - name: os_keystone
   src: https://github.com/openstack/openstack-ansible-os_keystone
   scm: git
-  version: 13.0.1
+  version: 13.1.0
