@@ -163,11 +163,10 @@ class RackspaceIdentity(object):
         return self._get_user(self.get_user_url(), {'name': username})
 
     def _authenticate(self):
-        users_password_hash = utils.hash_password(self._password)
         cached_data = cache.token_region.get(self._username)
         if cached_data:
             cached_password_hash, token_data = cached_data
-            if users_password_hash == cached_password_hash:
+            if utils.check_password(self._password, cached_password_hash):
                 return token_data
 
         headers = const.HEADERS.copy()
@@ -190,6 +189,7 @@ class RackspaceIdentity(object):
         resp.raise_for_status()
         token_data = resp.json()
 
+        users_password_hash = utils.hash_password(self._password)
         cache.token_region.set(
             self._username,
             (users_password_hash, token_data))
