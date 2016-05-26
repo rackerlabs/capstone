@@ -187,9 +187,25 @@ class RackspaceIdentity(object):
         if cached_data:
             cached_password_hash, token_data = cached_data
             if users_password_hash == cached_password_hash:
-                return token_data
+                self._token_data = token_data
 
-        token_data = self._authenticate(self._username)
+        if not self._token_data:
+            self._authenticate(self._username)
+
+        # Retrieve user to check/populate user's domain
+        if not self._user_ref:
+            self._user_ref = self.get_user_by_name(self._username)
+
+        if self._user_domain_id or self._user_domain_name:
+            self._assert_user_domain(self._token_data)
+
+        self._populate_user_domain(self._token_data)
+
+        if self._scope_domain_id:
+            self._assert_domain_scope(self._token_data)
+
+        if self._scope_project_id:
+            self._assert_project_scope(self._token_data)
 
         cache.token_region.set(
             self._username,
@@ -218,25 +234,8 @@ class RackspaceIdentity(object):
         resp.raise_for_status()
         self._token_data = resp.json()
 
-        # Retrieve user to check/populate user's domain
-        if not self._user_ref:
-            self._user_ref = self.get_user_by_name(username)
-
-        if self._user_domain_id or self._user_domain_name:
-            self._assert_user_domain(self._token_data)
-
-        self._populate_user_domain(self._token_data)
-
-        if self._scope_domain_id:
-            self._assert_domain_scope(self._token_data)
-
-        if self._scope_project_id:
-            self._assert_project_scope(self._token_data)
-
         LOG.info(_LI('Successfully authenticated user %s against v2.'),
                  username)
-
-        return self._token_data
 
 
 class Password(auth.AuthMethodHandler):
