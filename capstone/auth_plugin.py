@@ -224,10 +224,8 @@ class RackspaceIdentity(object):
 class RackspaceIdentityAdmin(RackspaceIdentity):
 
     @classmethod
-    def from_config(cls, x_forwarded_for=None):
-        return cls(conf.admin_username,
-                   conf.admin_password,
-                   x_forwarded_for=x_forwarded_for)
+    def from_config(cls):
+        return cls(conf.admin_username, conf.admin_password)
 
     def authenticate(self):
         if self._token_data:
