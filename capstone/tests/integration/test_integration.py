@@ -82,7 +82,7 @@ class BaseIntegrationTests(testtools.TestCase):
         self.assertIsNotNone(token.get('issued_at'))
         issued_at = self.assertValidISO8601ExtendedFormatDatetime(
             token['issued_at'])
-        self.assertTrue(issued_at < expires_at)
+        self.assertLess(issued_at, expires_at)
         schema.scoped_validator.validate(token)
 
     def authenticate(self, auth_data, expected_status=httplib.CREATED):
