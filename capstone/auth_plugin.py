@@ -40,12 +40,11 @@ class RackspaceIdentity(object):
             user_ref = admin_client.get_user_by_name(username)
         except exception.NotFound as e:
             raise exception.Unauthorized(e)
-        return cls(username, password,
+        return cls(username, password, user_ref,
                    user_domain_id=user_domain_id,
                    user_domain_name=user_domain_name,
                    scope_domain_id=scope_domain_id,
                    scope_project_id=scope_project_id,
-                   user_ref=user_ref,
                    x_forwarded_for=x_forwarded_for)
 
     @classmethod
@@ -60,25 +59,24 @@ class RackspaceIdentity(object):
         except exception.NotFound as e:
             raise exception.Unauthorized(e)
         username = user_ref['username']
-        return cls(username, password,
+        return cls(username, password, user_ref,
                    user_domain_id=user_domain_id,
                    user_domain_name=user_domain_name,
                    scope_domain_id=scope_domain_id,
                    scope_project_id=scope_project_id,
-                   user_ref=user_ref,
                    x_forwarded_for=x_forwarded_for)
 
-    def __init__(self, username, password,
+    def __init__(self, username, password, user_ref,
                  user_domain_id=None, user_domain_name=None,
                  scope_domain_id=None, scope_project_id=None,
-                 user_ref=None, x_forwarded_for=None):
+                 x_forwarded_for=None):
         self._username = username
         self._password = password
+        self._user_ref = user_ref
         self._user_domain_id = user_domain_id
         self._user_domain_name = user_domain_name
         self._scope_domain_id = scope_domain_id
         self._scope_project_id = scope_project_id
-        self._user_ref = user_ref
         self._x_forwarded_for = x_forwarded_for
         self._token_data = None
 
@@ -211,7 +209,7 @@ class RackspaceIdentity(object):
         return self._get_user('/users', {'name': username})
 
     def _authenticate(self):
-        cached_data = cache.token_region.get(self._username)
+        cached_data = cache.token_region.get(self._user_ref['id'])
         if cached_data:
             cached_password_hash, token_data = cached_data
             if utils.check_password(self._password, cached_password_hash):
@@ -238,11 +236,11 @@ class RackspaceIdentity(object):
 
         users_password_hash = utils.hash_password(self._password)
         cache.token_region.set(
-            self._username,
+            self._user_ref['id'],
             (users_password_hash, token_data))
         cache.token_map_region.set(
             token_data['access']['token']['id'],
-            self._username)
+            self._user_ref['id'])
         return token_data
 
     def authenticate(self):
@@ -272,7 +270,8 @@ class RackspaceIdentityAdmin(RackspaceIdentity):
 
     @classmethod
     def from_config(cls):
-        return cls(conf.admin_username, conf.admin_password)
+        return cls(conf.admin_username, conf.admin_password,
+                   {'id': conf.admin_user_id})
 
     def authenticate(self):
         if self._token_data:

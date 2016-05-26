@@ -32,6 +32,10 @@ CONF.register_opt(
                default=60),
     group='rackspace')
 CONF.register_opt(
+    cfg.StrOpt('id',
+               help='ID for the Identity service admin.'),
+    group='service_admin')
+CONF.register_opt(
     cfg.StrOpt('username',
                help='Username for the Identity service admin.'),
     group='service_admin')
@@ -70,6 +74,7 @@ if os.path.isfile(config_file):
     CONF.default_config_files.append(config_file)
     CONF.reload_config_files()
 
+admin_user_id = CONF.service_admin.id
 admin_username = CONF.service_admin.username
 admin_password = CONF.service_admin.password
 admin_project_id = CONF.service_admin.project_id
