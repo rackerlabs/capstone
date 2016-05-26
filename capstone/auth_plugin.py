@@ -208,7 +208,12 @@ class RackspaceIdentity(object):
 
     def _authenticate(self):
         users_password_hash = utils.hash_password(self._password)
-        cached_data = cache.token_region.get(self._username)
+
+        # End users should always have a user_ref at this point, but capstone's
+        # service user will only have a username.
+        cache_key = self._user_ref['id'] if self._user_ref else self._username
+
+        cached_data = cache.token_region.get(cache_key)
         if cached_data:
             cached_password_hash, token_data = cached_data
             if users_password_hash == cached_password_hash:
@@ -234,11 +239,12 @@ class RackspaceIdentity(object):
         )
 
         cache.token_region.set(
-            self._username,
+            cache_key,
             (users_password_hash, token_data))
         cache.token_map_region.set(
             token_data['access']['token']['id'],
-            self._username)
+            cache_key)
+
         return token_data
 
     def authenticate(self):
