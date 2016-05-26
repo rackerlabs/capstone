@@ -239,7 +239,13 @@ class Password(auth.AuthMethodHandler):
 
     def _get_scope(self, context):
         auth_params = context['environment']['openstack.params']['auth']
-        return auth_params.get('scope', {})
+        scope = auth_params.get('scope', {})
+
+        # NOTE(dstanek): support requests that are specifically unscoped
+        if scope == 'unscoped':
+            return {}
+
+        return scope
 
     def authenticate(self, context, auth_payload, auth_context):
         """Try to authenticate against the identity backend."""

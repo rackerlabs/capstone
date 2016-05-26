@@ -243,6 +243,18 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
         })
         self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
+    def test_with_an_explicitly_unscoped_request(self):
+        data = generate_password_auth_data_with_scope(
+            user={
+                "id": self.user_id,
+                "password": self.password,
+            },
+            scope='unscoped')
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+        self.assertValidTokenResponse(resp)
+
 
 class TestGettingAProjectScopedToken(BaseIntegrationTests):
 
