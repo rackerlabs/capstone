@@ -33,11 +33,15 @@ class RackspaceIdentity(object):
                       user_domain_id=None, user_domain_name=None,
                       scope_domain_id=None, scope_project_id=None,
                       x_forwarded_for=None):
+        admin_client = RackspaceIdentityAdmin.from_config()
+        admin_client.authenticate()
+        user_ref = admin_client.get_user_by_name(username)
         return cls(username, password,
                    user_domain_id=user_domain_id,
                    user_domain_name=user_domain_name,
                    scope_domain_id=scope_domain_id,
                    scope_project_id=scope_project_id,
+                   user_ref=user_ref,
                    x_forwarded_for=x_forwarded_for)
 
     @classmethod
@@ -45,7 +49,7 @@ class RackspaceIdentity(object):
                      user_domain_id=None, user_domain_name=None,
                      scope_domain_id=None, scope_project_id=None,
                      x_forwarded_for=None):
-        admin_client = cls.from_admin_config()
+        admin_client = RackspaceIdentityAdmin.from_config()
         admin_client.authenticate()
         user_ref = admin_client.get_user(user_id)
         username = user_ref['username']
@@ -56,10 +60,6 @@ class RackspaceIdentity(object):
                    scope_project_id=scope_project_id,
                    user_ref=user_ref,
                    x_forwarded_for=x_forwarded_for)
-
-    @classmethod
-    def from_admin_config(cls):
-        return cls.from_username(conf.admin_username, conf.admin_password)
 
     def __init__(self, username, password,
                  user_domain_id=None, user_domain_name=None,
@@ -161,7 +161,7 @@ class RackspaceIdentity(object):
     def get_user_by_name(self, username):
         return self._get_user(self.get_user_url(), {'name': username})
 
-    def authenticate(self, context=None):
+    def _authenticate(self):
         headers = const.HEADERS.copy()
         if self._x_forwarded_for:
             headers['X-Forwarded-For'] = self._x_forwarded_for
@@ -180,11 +180,10 @@ class RackspaceIdentity(object):
             headers=headers,
             json=data)
         resp.raise_for_status()
-        self._token_data = resp.json()
+        return resp.json()
 
-        # Retrieve user to check/populate user's domain
-        if not self._user_ref:
-            self._user_ref = self.get_user_by_name(self._username)
+    def authenticate(self):
+        self._token_data = self._authenticate()
 
         if self._user_domain_id or self._user_domain_name:
             self._assert_user_domain(self._token_data)
@@ -200,6 +199,19 @@ class RackspaceIdentity(object):
         LOG.info(_LI('Successfully authenticated user %s against v2.'),
                  self._username)
 
+        return self._token_data
+
+
+class RackspaceIdentityAdmin(RackspaceIdentity):
+
+    @classmethod
+    def from_config(cls, x_forwarded_for=None):
+        return cls(conf.admin_username,
+                   conf.admin_password,
+                   x_forwarded_for=x_forwarded_for)
+
+    def authenticate(self):
+        self._token_data = self._authenticate()
         return self._token_data
 
 
