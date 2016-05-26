@@ -8,6 +8,10 @@ build:
       code: |
         sh bootstrap.sh
     - script:
+      name: Build capstone
+      code: |
+        bash build_venv.sh
+    - script:
       name: Test everything
       code: |
         sh test.sh
