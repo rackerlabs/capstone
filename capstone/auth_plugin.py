@@ -16,6 +16,7 @@ from keystone.i18n import _LI
 from oslo_log import log
 import requests
 
+from capstone import cache
 from capstone import conf
 from capstone import const
 
@@ -134,7 +135,8 @@ class RackspaceIdentity(object):
         LOG.info(_LI('User %(u_name)s can scope to project %(p_id)s.'),
                  {'u_name': self._username, 'p_id': self._scope_project_id})
 
-    def _get_user(self, url, params=None):
+    @cache.memoize_user
+    def _get_user(self, url, params):
         token = self._token_data['access']['token']['id']
         headers = const.HEADERS.copy()
         headers['X-Auth-Token'] = token
@@ -153,10 +155,11 @@ class RackspaceIdentity(object):
 
     def get_user(self, user_id):
         self.authenticate()
-        return self._get_user(self.get_user_url(user_id=user_id))
+        params = None
+        return self._get_user(self.get_user_url(user_id=user_id), params)
 
     def get_user_by_name(self, username):
-        return self._get_user(self.get_user_url(), params={'name': username})
+        return self._get_user(self.get_user_url(), {'name': username})
 
     def authenticate(self, context=None):
         headers = const.HEADERS.copy()
