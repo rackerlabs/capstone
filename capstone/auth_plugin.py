@@ -190,17 +190,7 @@ class RackspaceIdentity(object):
                 if users_password_hash == cached_password_hash:
                     return token_data
 
-        token_data = self._authenticate(self._username)
-
-        if self._user_ref:  # FIXME(dstanek): needed because of the admin creds
-            cache.token_region.set(
-                self._user_ref['id'],
-                (users_password_hash, token_data))
-            cache.token_map_region.set(
-                token_data['access']['token']['id'],
-                self._user_ref['id'])
-
-        return token_data
+        return self._authenticate(self._username)
 
     def _authenticate(self, username):
         LOG.info(_LI('Authenticating user %s against v2.'), username)
