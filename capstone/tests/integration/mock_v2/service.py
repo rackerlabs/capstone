@@ -68,7 +68,7 @@ def list_users():
 def get_user_by_id(user_id):
     return flask.json.jsonify(**{
         "user": {
-            "RAX-AUTH:domainId": hash_str('account_id', user_id),
+            "RAX-AUTH:domainId": 'domain-' + hash_str('account_id', user_id),
             "username": user_id,
             "enabled": True,
             "email": "%s@example.com" % user_id,
@@ -89,7 +89,7 @@ def authenticate():
         return unauthorized()
 
     token_id = uuid.uuid4().hex
-    tenant_id = hash_str('account_id', username)
+    tenant_id = 'project-' + hash_str('account_id', username)
 
     five_minutes = datetime.timedelta(minutes=5)
     expires = datetime.datetime.utcnow() + five_minutes
