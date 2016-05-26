@@ -297,6 +297,27 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
         self.assertTokenIsUseable(token)
         self.assertValidTokenResponse(resp)
 
+    def test_repeated_authentications_return_the_same_token(self):
+        # Tokens should be cached in capstone, so they don't need to be
+        # retrieved twice from the v2.0 identity service. This should hold true
+        # unless caching in either keystone or capstone is disabled, even
+        # though both the mock v2 implementation and the actual v2
+        # implementation return unique tokens on each request.
+        uncached_user_id = uuid.uuid4().hex
+        uncached_password = uuid.uuid4().hex
+        data = generate_password_auth_data({
+            "id": uncached_user_id,
+            "password": uncached_password,
+        })
+
+        resp = self.authenticate(data)
+        token_1 = resp.headers['X-Subject-Token']
+
+        resp = self.authenticate(data)
+        token_2 = resp.headers['X-Subject-Token']
+
+        self.assertEqual(token_1, token_2)
+
 
 class TestGettingAProjectScopedToken(BaseIntegrationTests):
 
