@@ -36,7 +36,10 @@ class RackspaceIdentity(object):
                       x_forwarded_for=None):
         admin_client = RackspaceIdentityAdmin.from_config()
         admin_client.authenticate()
-        user_ref = admin_client.get_user_by_name(username)
+        try:
+            user_ref = admin_client.get_user_by_name(username)
+        except exception.NotFound as e:
+            raise exception.Unauthorized(e)
         return cls(username, password,
                    user_domain_id=user_domain_id,
                    user_domain_name=user_domain_name,
@@ -52,7 +55,10 @@ class RackspaceIdentity(object):
                      x_forwarded_for=None):
         admin_client = RackspaceIdentityAdmin.from_config()
         admin_client.authenticate()
-        user_ref = admin_client.get_user(user_id)
+        try:
+            user_ref = admin_client.get_user(user_id)
+        except exception.NotFound as e:
+            raise exception.Unauthorized(e)
         username = user_ref['username']
         return cls(username, password,
                    user_domain_id=user_domain_id,
@@ -76,14 +82,64 @@ class RackspaceIdentity(object):
         self._x_forwarded_for = x_forwarded_for
         self._token_data = None
 
-    def get_user_url(self, user_id=None):
-        user_url = '%s/users' % conf.rackspace_base_url
-        if user_id:
-            return '%s/%s' % (user_url, user_id)
-        return user_url
+    def url(self, path):
+        """Return a complete URL given just a path."""
+        return '%s%s' % (conf.rackspace_base_url, path)
 
-    def get_token_url(self):
-        return conf.rackspace_base_url + '/tokens'
+    def GET(self, path, params=None, auth_token=None):
+        """GET the resource at the specified path.
+
+        The specified path is expected to begin with a slash (/).
+
+        """
+        url = self.url(path)
+        LOG.info('GET %s', url)
+        headers = {
+            'Accept': 'application/json'}
+        if auth_token:
+            headers['X-Auth-Token'] = auth_token
+        resp = requests.get(url, headers=headers, params=params)
+
+        if resp.status_code == requests.codes.ok:
+            return resp.json()
+
+        self.handle_unexpected_response(resp)
+
+    def POST(self, path, data, headers=None,
+             expected_status=requests.codes.created):
+        """POST data to the specified path.
+
+        The specified path is expected to begin with a slash (/).
+
+        """
+        url = self.url(path)
+        LOG.info('POST %s', url)
+        headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        }
+        resp = requests.post(
+            url,
+            headers=headers,
+            json=data)
+
+        if resp.status_code == expected_status:
+            return resp.json()
+
+        self.handle_unexpected_response(resp)
+
+    def handle_unexpected_response(self, resp):
+        if resp.status_code == requests.codes.not_found:
+            msg = resp.json()['itemNotFound']['message']
+            LOG.info(msg)
+            raise exception.NotFound(msg)
+        elif resp.status_code == requests.codes.unauthorized:
+            msg = resp.json()['unauthorized']['message']
+            LOG.info(msg)
+            raise exception.Unauthorized(msg)
+
+        LOG.info(resp.text)
+        raise exception.UnexpectedError(resp.text)
 
     def _is_in_domain(self, domain, token_data):
         # If the required domain appears in the list of roles (as a project
@@ -137,30 +193,18 @@ class RackspaceIdentity(object):
                  {'u_name': self._username, 'p_id': self._scope_project_id})
 
     @cache.memoize_user
-    def _get_user(self, url, params):
+    def _get_user(self, path, params):
         token = self._token_data['access']['token']['id']
-        headers = const.HEADERS.copy()
-        headers['X-Auth-Token'] = token
-
-        resp = requests.get(url, headers=headers, params=params)
-        if resp.status_code != requests.codes.ok:
-            if resp.status_code == requests.codes.not_found:
-                msg = resp.json()['itemNotFound']['message']
-            else:
-                msg = resp.text
-            LOG.info(msg)
-            raise exception.Unauthorized(msg)
-        user = resp.json()['user']
-        LOG.info(_LI('Found user %s in v2.'), user['id'])
-        return user
+        return self.GET(path, params=params, auth_token=token)['user']
 
     def get_user(self, user_id):
         self.authenticate()
         params = None
-        return self._get_user(self.get_user_url(user_id=user_id), params)
+        return self._get_user('/users/%s' % user_id, params)
 
     def get_user_by_name(self, username):
-        return self._get_user(self.get_user_url(), {'name': username})
+        self.authenticate()
+        return self._get_user('/users', {'name': username})
 
     def _authenticate(self):
         users_password_hash = utils.hash_password(self._password)
@@ -175,20 +219,19 @@ class RackspaceIdentity(object):
             headers['X-Forwarded-For'] = self._x_forwarded_for
 
         LOG.info(_LI('Authenticating user %s against v2.'), self._username)
-        data = {
-            "auth": {
-                "passwordCredentials": {
-                    "username": self._username,
-                    "password": self._password,
+        token_data = self.POST(
+            '/tokens',
+            headers=headers,
+            data={
+                "auth": {
+                    "passwordCredentials": {
+                        "username": self._username,
+                        "password": self._password,
+                    },
                 },
             },
-        }
-        resp = requests.post(
-            self.get_token_url(),
-            headers=headers,
-            json=data)
-        resp.raise_for_status()
-        token_data = resp.json()
+            expected_status=requests.codes.ok
+        )
 
         cache.token_region.set(
             self._username,
