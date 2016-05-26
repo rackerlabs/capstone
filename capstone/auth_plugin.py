@@ -16,7 +16,6 @@ from keystone.i18n import _LI
 from oslo_log import log
 import requests
 
-from capstone import cache
 from capstone import conf
 from capstone import const
 
@@ -151,7 +150,6 @@ class RackspaceIdentity(object):
                 context['header']['x-forwarded-for'],
                 context['environment']['REMOTE_ADDR'])
 
-    @cache.memoize_user
     def _get_user(self, url, params):
         token = self._token_data['access']['token']['id']
         headers = const.HEADERS.copy()
@@ -182,25 +180,7 @@ class RackspaceIdentity(object):
         if self._token_data:
             return self._token_data
 
-        users_password_hash = secure_hash(self._password)
-        if self._user_ref:  # FIXME(dstanek): needed because of the admin creds
-            cached_data = cache.token_region.get(self._user_ref['id'])
-            if cached_data:
-                cached_password_hash, token_data = cached_data
-                if users_password_hash == cached_password_hash:
-                    return token_data
-
-        token_data = self._authenticate(self._username)
-
-        if self._user_ref:  # FIXME(dstanek): needed because of the admin creds
-            cache.token_region.set(
-                self._user_ref['id'],
-                (users_password_hash, token_data))
-            cache.token_map_region.set(
-                token_data['access']['token']['id'],
-                self._user_ref['id'])
-
-        return token_data
+        return self._authenticate(self._username)
 
     def _authenticate(self, username):
         LOG.info(_LI('Authenticating user %s against v2.'), username)
