@@ -11,6 +11,7 @@
 # under the License.
 
 from keystone import auth
+from keystone.common import utils
 from keystone import exception
 from keystone.i18n import _LI
 from oslo_log import log
@@ -162,6 +163,13 @@ class RackspaceIdentity(object):
         return self._get_user(self.get_user_url(), {'name': username})
 
     def _authenticate(self):
+        users_password_hash = utils.hash_password(self._password)
+        cached_data = cache.token_region.get(self._username)
+        if cached_data:
+            cached_password_hash, token_data = cached_data
+            if users_password_hash == cached_password_hash:
+                return token_data
+
         headers = const.HEADERS.copy()
         if self._x_forwarded_for:
             headers['X-Forwarded-For'] = self._x_forwarded_for
@@ -180,9 +188,20 @@ class RackspaceIdentity(object):
             headers=headers,
             json=data)
         resp.raise_for_status()
-        return resp.json()
+        token_data = resp.json()
+
+        cache.token_region.set(
+            self._username,
+            (users_password_hash, token_data))
+        cache.token_map_region.set(
+            token_data['access']['token']['id'],
+            self._username)
+        return token_data
 
     def authenticate(self):
+        if self._token_data:
+            return self._token_data
+
         self._token_data = self._authenticate()
 
         if self._user_domain_id or self._user_domain_name:
@@ -211,6 +230,9 @@ class RackspaceIdentityAdmin(RackspaceIdentity):
                    x_forwarded_for=x_forwarded_for)
 
     def authenticate(self):
+        if self._token_data:
+            return self._token_data
+
         self._token_data = self._authenticate()
         return self._token_data
 
