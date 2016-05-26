@@ -21,11 +21,18 @@ oslo_cache.configure_cache_region(cfg.CONF, user_region)
 
 token_region = oslo_cache.create_region()
 oslo_cache.configure_cache_region(cfg.CONF, token_region)
-token_region.expiration_time = 23.5 * 60
+
+# Ideally, this would be set to just under 24 hours (such as 23.5 hours), so
+# that we cache tokens for as long as possible without returning expired
+# tokens.
+token_region.expiration_time = 60
 
 token_map_region = oslo_cache.create_region()
 oslo_cache.configure_cache_region(cfg.CONF, token_map_region)
-token_map_region.expiration_time = 25 * 60
+# Ideally, this would be set to just over 24 hours (such as 25 hours), so that
+# the cache invalidator can more confidently purge revoked token data from the
+# token_region.
+token_map_region.expiration_time = 90
 
 config_group = 'cache'
 memoize_user = oslo_cache.get_memoization_decorator(
