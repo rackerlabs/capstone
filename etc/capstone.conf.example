@@ -4,6 +4,7 @@ feed_url = https://example.com/events
 # Polling period in seconds to request new feeds events
 polling_period = 60
 [service_admin]
+id = id_here
 username = username_here
 password = password_here
 project_id = project_id_here
