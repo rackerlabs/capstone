@@ -183,22 +183,20 @@ class RackspaceIdentity(object):
             return self._token_data
 
         users_password_hash = secure_hash(self._password)
-        if self._user_ref:  # FIXME(dstanek): needed because of the admin creds
-            cached_data = cache.token_region.get(self._user_ref['id'])
-            if cached_data:
-                cached_password_hash, token_data = cached_data
-                if users_password_hash == cached_password_hash:
-                    return token_data
+        cached_data = cache.token_region.get(self._username)
+        if cached_data:
+            cached_password_hash, token_data = cached_data
+            if users_password_hash == cached_password_hash:
+                return token_data
 
         token_data = self._authenticate(self._username)
 
-        if self._user_ref:  # FIXME(dstanek): needed because of the admin creds
-            cache.token_region.set(
-                self._user_ref['id'],
-                (users_password_hash, token_data))
-            cache.token_map_region.set(
-                token_data['access']['token']['id'],
-                self._user_ref['id'])
+        cache.token_region.set(
+            self._username,
+            (users_password_hash, token_data))
+        cache.token_map_region.set(
+            token_data['access']['token']['id'],
+            self._username)
 
         return token_data
 
