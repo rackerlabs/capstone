@@ -151,7 +151,6 @@ class RackspaceIdentity(object):
                 context['header']['x-forwarded-for'],
                 context['environment']['REMOTE_ADDR'])
 
-    @cache.memoize_user
     def _get_user(self, url, params):
         token = self._token_data['access']['token']['id']
         headers = const.HEADERS.copy()
