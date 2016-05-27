@@ -77,5 +77,4 @@ if os.path.isfile(config_file):
 admin_user_id = CONF.service_admin.id
 admin_username = CONF.service_admin.username
 admin_password = CONF.service_admin.password
-admin_project_id = CONF.service_admin.project_id
 rackspace_base_url = CONF.rackspace.base_url.rstrip('/')
