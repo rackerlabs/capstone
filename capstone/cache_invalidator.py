@@ -10,7 +10,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import hashlib
 import json
+import os
 import sched
 import time
 
@@ -18,6 +20,8 @@ from keystone.i18n import _LI
 from oslo_log import log
 import requests
 
+from capstone import auth_plugin
+from capstone import cache
 from capstone import conf
 from capstone import const
 
@@ -33,6 +37,10 @@ class Entry(object):
         self._entry = entry
 
     @property
+    def id(self):
+        return self._entry['id']
+
+    @property
     def type(self):
         return self._entry['content']['event']['type']
 
@@ -44,22 +52,72 @@ class Entry(object):
     def resource_type(self):
         return self._entry['content']['event']['product']['resourceType']
 
+    def _generate_key(self, arguments):
+        """Generate key by given arguments."""
+        kw_args = {}
+        key_function = cache.user_region.function_key_generator(
+            arguments,
+            auth_plugin.RackspaceIdentity._get_user,
+            **kw_args
+        )
+        # Return key and remove trailing pipe character
+        return key_function()[:-1]
+
+    def _invalidate_user_cache(self, user_id):
+        # Invalidate token for updated/suspended/deleted user
+        if cache.token_region.get(user_id):
+            cache.token_region.delete(user_id)
+            LOG.info(_LI('Invalidate tokens for updated/suspended/deleted '
+                         'user %s'), user_id)
+        user = get_user(user_id)
+        if self.type == 'UPDATE' and user:
+            # Attempt to delete user's entry in cache if an identity
+            # update event feed was issued.
+            arguments_by_name = '%s %s' % (
+                '/users',
+                {'name': user['username'].decode('ascii')}
+            )
+            arguments_by_id = '%s/%s None' % ('/users', user['id'])
+            cache.user_region.delete(self._generate_key(arguments_by_id))
+            cache.user_region.delete(self._generate_key(arguments_by_name))
+
+    def _invalidate_token_cache(self, token_id):
+        # Invalidate token by id
+        user_id = cache.token_map_region.get(token_id)
+        if user_id:
+            cache.token_map_region.delete(token_id)
+            cache.token_region.delete(user_id)
+            LOG.info(_LI('Invalidate token SHA{%s}'),
+                     hashlib.sha1(token_id).hexdigest)
+
     def invalidate(self):
         """Invalidate entry.
 
         Invalidate capstone's cache by event type.
         """
-        if self.resource_type in ['USER', 'TRR_USER']:
-            # Invalidate all tokens for updated/deleted user
-            if self.type in ['UPDATE', 'SUSPEND', 'DELETE']:
-                user_id = self.resource_id
-                LOG.info(_LI('Invalidate tokens for updated/deleted user %s'),
-                         user_id)
-        elif self.resource_type == 'TOKEN':
-            # Invalidate token by id
-            if self.type == 'DELETE':
-                token_id = self.resource_id
-                LOG.info(_LI('Invalidate token %s'), token_id)
+        try:
+            if (self.resource_type in ['USER', 'TRR_USER'] and
+                    self.type in ['UPDATE', 'SUSPEND', 'DELETE']):
+                self._invalidate_user_cache(self.resource_id)
+            elif self.resource_type == 'TOKEN' and self.type == 'DELETE':
+                self._invalidate_token_cache(self.resource_id)
+        except Exception as e:
+            LOG.info(_LI('Unexpected error: %s'), e)
+            raise RuntimeError(e)
+
+
+def get_user(user_id, retry=True):
+    user_url = CONF.rackspace.base_url + '/users/' + user_id
+    headers = const.HEADERS
+    headers['X-Auth-Token'] = get_admin_token()
+    resp = requests.get(user_url, headers=headers)
+    if resp.status_code == requests.codes.ok:
+        return resp.json()['user']
+    elif retry:
+        return get_user(user_id, retry=False)
+    else:
+        LOG.info(_LI('Failed to retrieve user from v2: response code %s'),
+                 resp.status_code)
 
 
 def get_admin_token(retry=True):
@@ -139,12 +197,20 @@ class CloudFeedClient(object):
         event parsed.
         """
         endpoint = (self._feed_url +
-                    ("?marker=" + self._marker if self._marker else ""))
+                    ("?marker=" + self.marker if self.marker else ""))
         self._entries = []
         s = requests.Session()
         self._page_feed(s, endpoint)
         if self._entries:
-            self._marker = self._entries[0]['id']
+            self.marker = self._entries[0]['id']
+
+    @property
+    def marker(self):
+        return self._marker
+
+    @marker.setter
+    def marker(self, value):
+        self._marker = value
 
     @property
     def entries(self):
@@ -154,7 +220,18 @@ class CloudFeedClient(object):
 
 
 def start(sc, client):
-    for entry in client.entries:
+    entries = client.entries
+
+    if entries:
+        # Save oldest event id on the list in case an unexpected error occurs
+        # processing the currently list of entries and the process needs to
+        # restart.
+        with open(CONF.rackspace.marker_file, 'w') as f:
+            f.seek(0)
+            f.write(entries[-1]['id'])
+            f.truncate()
+
+    for entry in entries:
         event = Entry(entry)
         event.invalidate()
     sc.enter(CONF.rackspace.polling_period, 1, start, (sc, client))
@@ -162,7 +239,16 @@ def start(sc, client):
 
 def main():
     try:
+        filename = CONF.rackspace.marker_file
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename))
+
         client = CloudFeedClient(CONF.rackspace.feed_url)
+
+        if os.path.isfile(filename):
+            with open(filename, 'r') as f:
+                client.marker = f.read()
+
         sc = sched.scheduler(time.time, time.sleep)
         # Method enter(delay, priority, action, argument)
         sc.enter(0, 1, start, (sc, client))
