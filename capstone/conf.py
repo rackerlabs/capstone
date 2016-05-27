@@ -44,10 +44,6 @@ CONF.register_opt(
                help='Password for the Identity service admin.'),
     group='service_admin')
 CONF.register_opt(
-    cfg.StrOpt('project_id',
-               help='Project ID for the Identity service admin.'),
-    group='service_admin')
-CONF.register_opt(
     cfg.BoolOpt('caching', default=True,
                 help='Toggle for capstone caching. This has no '
                      'effect unless global caching is enabled.'),
@@ -77,5 +73,4 @@ if os.path.isfile(config_file):
 admin_user_id = CONF.service_admin.id
 admin_username = CONF.service_admin.username
 admin_password = CONF.service_admin.password
-admin_project_id = CONF.service_admin.project_id
 rackspace_base_url = CONF.rackspace.base_url.rstrip('/')

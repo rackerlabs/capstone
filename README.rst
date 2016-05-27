@@ -255,7 +255,6 @@ The playbook will also expect us to provide a ``capstone.conf``::
     [service_admin]
     username = <username>
     password = <password>
-    project_id = <project_id>
 
     [rackspace]
     base_url = <rackspace_api_endpoint>
