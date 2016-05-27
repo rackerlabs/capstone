@@ -31,4 +31,4 @@ pip install \
     tox
 
 # Install ansible galaxy requirements
-ansible-galaxy install -r deploy/ansible-role-requirements.yml
+ansible-galaxy install --force -r deploy/ansible-role-requirements.yml
