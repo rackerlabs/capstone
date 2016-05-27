@@ -14,6 +14,7 @@ import logging
 import os
 import sys
 
+from keystone.common import config
 from oslo_config import cfg
 
 
@@ -36,6 +37,12 @@ CONF.register_opt(
     cfg.IntOpt('polling_period',
                help='Polling period in seconds to read identity feed events.',
                default=60),
+    group='rackspace')
+CONF.register_opt(
+    cfg.StrOpt('marker_file',
+               help='File location used to store the last successful event ID '
+                    'parsed.',
+               default='/var/run/capstone_invalidator/marker'),
     group='rackspace')
 CONF.register_opt(
     cfg.StrOpt('id',
@@ -63,7 +70,13 @@ CONF.register_opt(
 
 # Setup cache invalidator configuration
 if os.path.basename(sys.argv[0]) == 'capstone-cache-invalidator':
-    CONF(default_config_files=[])
+    config.configure()
+    # Set default config values and load keystone.conf to setup caching
+    # configurations.
+    config.set_config_defaults()
+    keystone_conf = os.environ.get('KEYSTONE_CONFIG',
+                                   '/etc/keystone/keystone.conf')
+    CONF(default_config_files=[keystone_conf])
     logging_config_file = os.environ.get('CACHE_INVALIDATOR_LOGGING_CONFIG',
                                          '/etc/keystone/logging.conf')
     logging.config.fileConfig(logging_config_file)
