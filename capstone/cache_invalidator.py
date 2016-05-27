@@ -18,6 +18,7 @@ from keystone.i18n import _LI
 from oslo_log import log
 import requests
 
+from capstone import cache
 from capstone import conf
 from capstone import const
 
@@ -51,15 +52,18 @@ class Entry(object):
         """
         if self.resource_type in ['USER', 'TRR_USER']:
             # Invalidate all tokens for updated/deleted user
-            if self.type in ['UPDATE', 'SUSPEND', 'DELETE']:
-                user_id = self.resource_id
+            token = cache.user_region.get(self.resource_id)
+            if self.type in ['UPDATE', 'SUSPEND', 'DELETE'] and token:
+                cache.user_region.delete(self.resource_id)
                 LOG.info(_LI('Invalidate tokens for updated/deleted user %s'),
-                         user_id)
-        elif self.resource_type == 'TOKEN':
+                         self.resource_id)
+        if self.resource_type == 'TOKEN':
             # Invalidate token by id
-            if self.type == 'DELETE':
-                token_id = self.resource_id
-                LOG.info(_LI('Invalidate token %s'), token_id)
+            user_id = cache.token_region.get(self.resource_id)
+            if self.type == 'DELETE' and user_id:
+                cache.token_region.delete(self.resource_id)
+                cache.token_region.delete(user_id)
+                LOG.info(_LI('Invalidate token %s'), self.resource_id)
 
 
 def get_admin_token(retry=True):
