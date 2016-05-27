@@ -1,0 +1,48 @@
+---
+
+- name: Install newrelic python package
+  pip:
+    name: newrelic
+    state: latest
+  register: install_newrelic
+  tags:
+    - capstone
+    - monitoring
+# TODO(lbragstad): We could add newrelic-sysmond here, which is an apt package.
+# The newrelic-sysmond tool reports additional server information to your New
+# Relic account. In order to do so, the package will have to be mirrored on
+# http://mirrors.rackspace.com/ and we would have to add these steps
+# (http://cdn.pasteraw.com/dy5fn3xe0juzxqffq0ew2d0ca2t9ynk).
+- name: Drop newrelic configuration
+  template:
+    src: templates/etc/keystone/newrelic.ini
+    dest: /etc/keystone/newrelic.ini
+    owner: keystone
+  register: configure_newrelic
+  tags:
+    - capstone
+    - monitoring
+- name: Reconfigure keystone wsgi scripts
+  template:
+    src: templates/var/www/cgi-bin/keystone/keystone-wsgi.py.j2
+    dest: /var/www/cgi-bin/keystone/{{ item }}
+    owner: keystone
+  with_items:
+    - admin
+    - main
+  register: configure_keystone_wsgi
+  tags:
+    - capstone
+    - monitoring
+- name: Restart apache
+  service:
+    name: "apache2"
+    state: "restarted"
+    pattern: "apache2"
+  when:
+    - install_newrelic | changed
+    - configure_newrelic | changed
+    - configure_keystone_wsgi | changed
+  tags:
+    - capstone
+    - monitoring
