@@ -1,0 +1,30 @@
+---
+
+- name: Install newrelic
+  pip:
+    name=newrelic
+    state=latest
+- name: Drop newrelic configuration
+  template:
+    src: templates/etc/keystone/newrelic.ini
+    dest: /etc/keystone/newrelic.ini
+    owner: keystone
+  tags:
+    - capstone
+    - monitoring
+- name: Reconfigure keystone wsgi scripts
+  template:
+    src: templates/var/www/cgi-bin/keystone/keystone-wsgi.py.j2
+    dest: /var/www/cgi-bin/keystone/{{ item }}
+    owner: keystone
+  with_items:
+    - admin
+    - main
+  tags:
+    - capstone
+    - monitoring
+- name: Restart apache
+  service:
+    name: "apache2"
+    state: "restarted"
+    pattern: "apache2"

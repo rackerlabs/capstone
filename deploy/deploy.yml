@@ -9,6 +9,7 @@
     - include: tasks/install_plight.yml
     - include: tasks/capstone_local_install.yml
     - include: tasks/capstone_post_tasks.yml
+    - include: tasks/newrelic.yml
   vars:
     # NOTE(lbragstad): These variables are required regardless if we're
     # deploying venvs to staging/production or if we're installing from

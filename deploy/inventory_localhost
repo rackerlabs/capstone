@@ -6,3 +6,5 @@ service_user_id = test
 service_user_name = test
 service_user_password = a94a8fe5ccb19ba61c4c0873d391e987982fbbd3
 rackspace_base_url = http://localhost:8080/v2.0/
+newrelic_license_key = license_key_goes_here
+application_name = capstone
