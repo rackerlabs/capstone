@@ -8,11 +8,8 @@ lsb_release -a | grep '14.04'
 sed "s@archive.ubuntu.com@mirror.rackspace.com@" \
     -i /etc/apt/sources.list
 apt update
-# apt-transport-https is only required due to
-# https://bugs.launchpad.net/openstack-ansible/+bug/1547541
 apt install -V -y \
     build-essential \
-    apt-transport-https \
     curl \
     git-core \
     libffi-dev \
