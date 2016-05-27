@@ -10,6 +10,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import hashlib
 import json
 import sched
 import time
@@ -18,6 +19,8 @@ from keystone.i18n import _LI
 from oslo_log import log
 import requests
 
+from capstone import auth_plugin
+from capstone import cache
 from capstone import conf
 from capstone import const
 
@@ -44,22 +47,64 @@ class Entry(object):
     def resource_type(self):
         return self._entry['content']['event']['product']['resourceType']
 
+    def _generate_key(self, arguments):
+        """Generate key by given arguments."""
+        kw_args = {}
+        key_function = cache.user_region.function_key_generator(
+            arguments,
+            auth_plugin.RackspaceIdentity._get_user,
+            **kw_args
+        )
+        # Return key and remove trailing pipe character
+        return key_function()[:-1]
+
     def invalidate(self):
         """Invalidate entry.
 
         Invalidate capstone's cache by event type.
         """
-        if self.resource_type in ['USER', 'TRR_USER']:
-            # Invalidate all tokens for updated/deleted user
-            if self.type in ['UPDATE', 'SUSPEND', 'DELETE']:
-                user_id = self.resource_id
-                LOG.info(_LI('Invalidate tokens for updated/deleted user %s'),
-                         user_id)
-        elif self.resource_type == 'TOKEN':
+        if (self.resource_type in ['USER', 'TRR_USER'] and
+                self.type in ['UPDATE', 'SUSPEND', 'DELETE']):
+            # Invalidate token for updated/suspended/deleted user
+            if cache.token_region.get(self.resource_id):
+                cache.token_region.delete(self.resource_id)
+                LOG.info(_LI('Invalidate tokens for updated/suspended/deleted '
+                             'user %s'), self.resource_id)
+
+            user = get_user(self.resource_id)
+            if self.type == 'UPDATE' and user:
+                # Attempt to delete user's entry in cache if an identity update
+                # event feed was issued.
+                arguments_by_name = '%s %s' % (
+                    '/users',
+                    {'name': unicode(user['username'])}
+                )
+                arguments_by_id = '%s/%s' % ('/users', user['id'])
+                cache.user_region.delete(self._generate_key(arguments_by_id))
+                cache.user_region.delete(self._generate_key(arguments_by_name))
+        elif self.resource_type == 'TOKEN' and self.type == 'DELETE':
             # Invalidate token by id
-            if self.type == 'DELETE':
-                token_id = self.resource_id
-                LOG.info(_LI('Invalidate token %s'), token_id)
+            user_id = cache.token_map_region.get(self.resource_id)
+            if user_id:
+                cache.token_map_region.delete(self.resource_id)
+                cache.token_region.delete(user_id)
+                LOG.info(_LI('Invalidate token SHA{%s}'),
+                         hashlib.sha1(self.resource_id).hexdigest)
+
+
+def get_user(user_id, retry=True):
+    user_url = CONF.rackspace.base_url + '/users/' + user_id
+    headers = const.HEADERS
+    headers['X-Auth-Token'] = get_admin_token()
+    resp = requests.get(user_url, headers=headers)
+    if resp.status_code == requests.codes.ok:
+        return resp.json()['user']
+    elif retry:
+        return get_user(user_id, retry=False)
+    else:
+        msg = (_LI('Failed to retrieve user from v2: response code %s') %
+               resp.status_code)
+        LOG.info(msg)
 
 
 def get_admin_token(retry=True):
