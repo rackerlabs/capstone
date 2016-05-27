@@ -39,8 +39,10 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
+        user_ref = {}
         identity = auth_plugin.RackspaceIdentity(
-            self.username, self.password, user_domain_id=self.domain)
+            self.username, self.password, user_ref,
+            user_domain_id=self.domain)
         identity._assert_user_domain(token_data)
 
     def test_correct_user_domain_name_from_roles(self):
@@ -56,8 +58,10 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
+        user_ref = {}
         identity = auth_plugin.RackspaceIdentity(
-            self.username, self.password, user_domain_name=self.domain)
+            self.username, self.password, user_ref,
+            user_domain_name=self.domain)
         identity._assert_user_domain(token_data)
 
     def test_correct_user_domain_id_from_Rackspace(self):
