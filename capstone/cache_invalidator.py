@@ -10,16 +10,19 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import hashlib
 import json
+import os
 import sched
 import time
 
-from keystone.i18n import _LI
+from keystone.i18n import _LI, _LE  # noqa
 from oslo_log import log
 import requests
 
+from capstone import cache
+from capstone.client import v2
 from capstone import conf
-from capstone import const
 
 
 CONF = conf.CONF
@@ -33,6 +36,10 @@ class Entry(object):
         self._entry = entry
 
     @property
+    def id(self):
+        return self._entry['id']
+
+    @property
     def type(self):
         return self._entry['content']['event']['type']
 
@@ -44,22 +51,76 @@ class Entry(object):
     def resource_type(self):
         return self._entry['content']['event']['product']['resourceType']
 
+    def _invalidate_user_cache_by_user_id(self, user_id):
+        # Invalidate token for updated/suspended/deleted user
+        cache.token_region.delete(user_id)
+        LOG.info(_LI('Invalidate tokens for user %(u_id)s. Reason: %(t)s'),
+                 {'u_id': user_id, 't': self.type})
+
+        user = get_user(user_id)
+        if user:
+            # Attempt to invalidate user's entry in cache if an identity
+            # update/suspend/delete event feed was issued.
+
+            # Invalidate user by name
+            path = '/users'
+            params = {'name': user['username'].decode('ascii')}
+            v2.RackspaceIdentity._get_user.invalidate(
+                v2.RackspaceIdentity._get_user, path, params)
+            # Invalidate user by id
+            path = '%s/%s' % ('/users', user['id'])
+            params = None
+            v2.RackspaceIdentity._get_user.invalidate(
+                v2.RackspaceIdentity._get_user, path, params)
+            LOG.info(_LI('Invalidate user %(u_id)s entry. Reason: %(t)s'),
+                     {'u_id': user_id, 't': self.type})
+
+    def _invalidate_token_cache_by_token_id(self, token_id):
+        # Invalidate token by hashed token_id for token authentication
+        hash_token = hashlib.sha1(token_id).hexdigest()
+        cache.token_region.delete(hash_token)
+        # Invalidate token by id
+        user_id = cache.token_map_region.get(token_id)
+        if user_id:
+            cache.token_region.delete(user_id)
+            LOG.info(_LI('Invalidated token SHA1{%s}'),
+                     hashlib.sha1(token_id).hexdigest())
+
     def invalidate(self):
         """Invalidate entry.
 
-        Invalidate capstone's cache by event type.
+        Invalidate capstone's cache by event type. Cache invalidations happen
+        when:
+            - A user is deleted
+            - A user is suspended
+            - A user is updated
+            - A token is deleted
         """
-        if self.resource_type in ['USER', 'TRR_USER']:
-            # Invalidate all tokens for updated/deleted user
-            if self.type in ['UPDATE', 'SUSPEND', 'DELETE']:
-                user_id = self.resource_id
-                LOG.info(_LI('Invalidate tokens for updated/deleted user %s'),
-                         user_id)
-        elif self.resource_type == 'TOKEN':
-            # Invalidate token by id
-            if self.type == 'DELETE':
-                token_id = self.resource_id
-                LOG.info(_LI('Invalidate token %s'), token_id)
+        try:
+            if (self.resource_type in ['USER', 'TRR_USER'] and
+                    self.type in ['UPDATE', 'SUSPEND', 'DELETE']):
+                self._invalidate_user_cache_by_user_id(self.resource_id)
+            elif self.resource_type == 'TOKEN' and self.type == 'DELETE':
+                self._invalidate_token_cache_by_token_id(self.resource_id)
+        except Exception:
+            # This exception is caught at the main method which will terminate
+            # the cache invalidator process.
+            LOG.error(_LE('Failed to invalidate event with resource id: %s'),
+                      self.resource_id)
+            raise
+
+
+def get_user(user_id, retry=True):
+    user_ref = None
+    try:
+        admin_client = v2.RackspaceIdentityAdmin.from_config()
+        admin_client.authenticate()
+        user_ref = admin_client.get_user(user_id)
+    except Exception:
+        if retry:
+            return get_user(user_id, retry=False)
+        LOG.info(_LI('Failed to retrieve user from v2.'))
+    return user_ref
 
 
 def get_admin_token(retry=True):
@@ -68,26 +129,16 @@ def get_admin_token(retry=True):
     Make a v2 authentication request to retrieve an admin token. Retry on
     first failure.
     """
-    data = {
-        "auth": {
-            "passwordCredentials": {
-                "username": CONF.service_admin.username,
-                "password": CONF.service_admin.password,
-            },
-        },
-    }
-    token_url = CONF.rackspace.base_url + '/tokens'
-    resp = requests.post(token_url, headers=const.HEADERS, json=data)
-    if resp.status_code == requests.codes.ok:
-        token_data = resp.json()
-        return token_data['access']['token']['id']
-    elif retry:
-        return get_admin_token(retry=False)
-    else:
-        msg = (_LI('Authentication failed against v2: response code %s') %
-               resp.status_code)
+    try:
+        admin_client = v2.RackspaceIdentityAdmin.from_config()
+        token_data = admin_client.authenticate()
+    except Exception:
+        if retry:
+            return get_admin_token(retry=False)
+        msg = _LI('Authentication failed against v2.')
         LOG.info(msg)
         raise RuntimeError(msg)
+    return token_data['access']['token']['id']
 
 
 class CloudFeedClient(object):
@@ -139,17 +190,25 @@ class CloudFeedClient(object):
         event parsed.
         """
         endpoint = (self._feed_url +
-                    ("?marker=" + self._marker if self._marker else ""))
+                    ('?marker=' + self.marker if self.marker else ''))
         self._entries = []
         s = requests.Session()
         self._page_feed(s, endpoint)
         if self._entries:
-            self._marker = self._entries[0]['id']
+            self.marker = self._entries[0]['id']
+
+    @property
+    def marker(self):
+        return self._marker
+
+    @marker.setter
+    def marker(self, value):
+        self._marker = value
 
     @property
     def entries(self):
         self._parse()
-        LOG.info(_LI("Parsing %d event feed(s)"), len(self._entries))
+        LOG.info(_LI('Parsing %d event feed(s)'), len(self._entries))
         return self._entries
 
 
@@ -157,15 +216,29 @@ def start(sc, client):
     for entry in client.entries:
         event = Entry(entry)
         event.invalidate()
+        # Save event id after the event has successfully been processed.
+        with open(CONF.rackspace.marker_file, 'w') as f:
+            f.write(event.id)
+
     sc.enter(CONF.rackspace.polling_period, 1, start, (sc, client))
 
 
 def main():
     try:
+        filename = CONF.rackspace.marker_file
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(filename))
+
         client = CloudFeedClient(CONF.rackspace.feed_url)
+
+        if os.path.isfile(filename):
+            with open(filename, 'r') as f:
+                client.marker = f.read()
+
         sc = sched.scheduler(time.time, time.sleep)
         # Method enter(delay, priority, action, argument)
         sc.enter(0, 1, start, (sc, client))
         sc.run()
-    except RuntimeError as e:
-        raise SystemExit(e.message)
+    except Exception as e:
+        LOG.exception(_LE('An error occurred processing event feeds.'))
+        raise SystemExit(e)

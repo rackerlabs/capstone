@@ -40,6 +40,7 @@ class TestCloudFeedClient(testtools.TestCase):
                                    username='username')
         self.config_fixture.config(group='service_admin',
                                    password='password')
+        reload(cache_invalidator.conf)
 
     def config(self, config_files):
         CONF(args=[], project='capstone', default_config_files=config_files)
