@@ -12,7 +12,7 @@
         state: directory
     - name: Drop yaml files for os-client-config
       template:
-        src: templates/{{ item }}
+        src: templates/config/openstack/{{ item }}
         dest: ~/.config/openstack/{{ item }}
       with_items:
         - clouds.yml
