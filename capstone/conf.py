@@ -79,3 +79,14 @@ admin_username = CONF.service_admin.username
 admin_password = CONF.service_admin.password
 admin_project_id = CONF.service_admin.project_id
 rackspace_base_url = CONF.rackspace.base_url.rstrip('/')
+
+# Validate config at startup
+msg = '`[%(groups)s] %(option)s` is required in capstone.conf'
+if not admin_user_id:
+    raise Exception(msg % {'group': 'service_admin', 'option': 'id'})
+if not admin_username:
+    raise Exception(msg % {'group': 'service_admin', 'option': 'username'})
+if not admin_password:
+    raise Exception(msg % {'group': 'service_admin', 'option': 'password'})
+if not rackspace_base_url:
+    raise Exception(msg % {'group': 'rackspace', 'option': 'base_url'})
