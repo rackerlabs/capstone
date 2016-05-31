@@ -99,7 +99,8 @@ class RackspaceIdentity(object):
             headers['X-Auth-Token'] = auth_token
 
         try:
-            resp = requests.get(url, headers=headers, params=params)
+            resp = requests.get(url, headers=headers, params=params,
+                                timeout=conf.request_timeout)
         except requests.exceptions.RequestException as e:
             LOG.info(e)
             raise capstone_exception.BadGateway()
@@ -124,7 +125,8 @@ class RackspaceIdentity(object):
         }
 
         try:
-            resp = requests.post(url, headers=headers, json=data)
+            resp = requests.post(url, headers=headers, json=data,
+                                 timeout=conf.request_timeout)
         except requests.exceptions.RequestException as e:
             LOG.info(e)
             raise capstone_exception.BadGateway()

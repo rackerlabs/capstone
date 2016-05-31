@@ -23,6 +23,12 @@ CONF.register_opt(
                help='Base URL to be used to build v2 Identity URLs.'),
     group='rackspace')
 CONF.register_opt(
+    cfg.FloatOpt('request_timeout',
+                 help='Timeout in seconds (float) for request made against v2 '
+                      'Identity.',
+                 default=6.0),
+    group='rackspace')
+CONF.register_opt(
     cfg.StrOpt('feed_url',
                help='URL used for reading identity feed events.'),
     group='rackspace')
@@ -74,6 +80,7 @@ admin_user_id = CONF.service_admin.id
 admin_username = CONF.service_admin.username
 admin_password = CONF.service_admin.password
 rackspace_base_url = CONF.rackspace.base_url.rstrip('/')
+request_timeout = CONF.rackspace.request_timeout
 
 # Validate config at startup
 msg = '`[%(groups)s] %(option)s` is required in capstone.conf'
