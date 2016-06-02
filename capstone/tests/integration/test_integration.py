@@ -212,6 +212,14 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
         })
         self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
+    def test_with_disabled_user(self):
+        data = generate_password_auth_data({
+            "name": 'disabled',
+            "password": self.password,
+            "domain": {"id": uuid.uuid4().hex},
+        })
+        self.authenticate(data, expected_status=httplib.FORBIDDEN)
+
     def test_with_username_and_domain_name(self):
         data = generate_password_auth_data({
             "name": self.username,
