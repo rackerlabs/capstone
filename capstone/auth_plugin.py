@@ -149,6 +149,10 @@ class RackspaceIdentity(object):
             msg = resp.json()['badRequest']['message']
             LOG.info(msg)
             raise exception.ValidationError(msg)
+        elif resp.status_code == requests.codes.forbidden:
+            msg = resp.json()['userDisabled']['message']
+            LOG.info(msg)
+            raise exception.ForbiddenNotSecurity(msg)
 
         LOG.info(resp.text)
         raise exception.UnexpectedError(resp.text)

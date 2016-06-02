@@ -40,6 +40,19 @@ def unauthorized():
     return response
 
 
+def forbidden():
+    """Return a 403 Forbidden response."""
+    response = flask.json.jsonify(**{
+        "error": {
+            "code": 403,
+            "message": "User 'disabled' is disabled.",
+            "title": "Forbidden"
+        }
+    })
+    response.status_code = 403
+    return response
+
+
 @application.route('/v2.0/users', methods=['GET'])
 def list_users():
     """List users (but really get user by name)."""
@@ -82,6 +95,10 @@ def get_user_by_id(user_id):
 def authenticate():
     username = request.json['auth']['passwordCredentials']['username']
     password = request.json['auth']['passwordCredentials']['password']
+
+    # Authentication is forbidden for 'disabled' user
+    if username == 'disabled':
+        return forbidden()
 
     # Authentication is valid if the password is the SHA1 hexdigest of the
     # username.
