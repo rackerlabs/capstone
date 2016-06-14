@@ -96,15 +96,17 @@ Use cases
 
    - Domain-scoped: ``domain_name``
 
-2. **Validate a token.** Rackspace public cloud should use v3 internally, and
-   the first step is to allow them to validate user tokens against Keystone.
+2. **Validate a token.** *This is not yet supported, but is a logical part of
+   our roadmap.* Rackspace public cloud should use v3 internally, and the first
+   step is to allow them to validate user tokens against Keystone.
 
-3. **User account management.** Users should be able to update their own
-   password and change their username with the same user experience as the v2
-   API.
+3. **User account management.**  *This is not yet supported, but is a logical
+   part of our roadmap.* Users should be able to update their own password and
+   change their username with the same user experience as the v2 API.
 
-4. **Delegation.** Users should be able to use v3 to delegate authorization to
-   each other (trusts or otherwise).
+4. **Delegation.**  *This is not yet supported, but is a logical part of our
+   roadmap.* Users should be able to use v3 to delegate authorization to each
+   other (trusts or otherwise).
 
 v3 ⟷ v2 attribute mapping
 ~~~~~~~~~~~~~~~~~~~~~~~~~
