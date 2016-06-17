@@ -10,6 +10,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import hashlib
+
 from keystone import auth
 from keystone.common import utils
 from keystone import exception
@@ -31,7 +33,7 @@ METHOD_NAME = 'password'
 class RackspaceIdentity(object):
 
     @classmethod
-    def from_username(cls, username, password,
+    def from_username(cls, username, password, token_id=None,
                       user_domain_id=None, user_domain_name=None,
                       scope_domain_id=None, scope_project_id=None,
                       x_forwarded_for=None):
@@ -42,6 +44,7 @@ class RackspaceIdentity(object):
         except exception.NotFound as e:
             raise exception.Unauthorized(e)
         return cls(username, password, user_ref,
+                   token_id=token_id,
                    user_domain_id=user_domain_id,
                    user_domain_name=user_domain_name,
                    scope_domain_id=scope_domain_id,
@@ -49,7 +52,7 @@ class RackspaceIdentity(object):
                    x_forwarded_for=x_forwarded_for)
 
     @classmethod
-    def from_user_id(cls, user_id, password,
+    def from_user_id(cls, user_id, password, token_id=None,
                      user_domain_id=None, user_domain_name=None,
                      scope_domain_id=None, scope_project_id=None,
                      x_forwarded_for=None):
@@ -61,19 +64,36 @@ class RackspaceIdentity(object):
             raise exception.Unauthorized(e)
         username = user_ref['username']
         return cls(username, password, user_ref,
+                   token_id=token_id,
                    user_domain_id=user_domain_id,
                    user_domain_name=user_domain_name,
                    scope_domain_id=scope_domain_id,
                    scope_project_id=scope_project_id,
                    x_forwarded_for=x_forwarded_for)
 
-    def __init__(self, username, password, user_ref,
+    @classmethod
+    def from_token(cls, token_id, scope_project_id=None, x_forwarded_for=None):
+        admin_client = RackspaceIdentityAdmin.from_config()
+        admin_client.authenticate()
+        try:
+            token_data = admin_client.validate_token(token_id)
+            user_id = token_data['access']['user']['id']
+            user_ref = admin_client.get_user(user_id)
+        except Exception:
+            raise
+
+        return cls(None, None, user_ref, token_id=token_id,
+                   scope_project_id=scope_project_id,
+                   x_forwarded_for=x_forwarded_for)
+
+    def __init__(self, username, password, user_ref, token_id=None,
                  user_domain_id=None, user_domain_name=None,
                  scope_domain_id=None, scope_project_id=None,
                  x_forwarded_for=None):
         self._username = username
         self._password = password
         self._user_ref = user_ref
+        self._token_id = token_id
         self._user_domain_id = user_domain_id
         self._user_domain_name = user_domain_name
         self._scope_domain_id = scope_domain_id
@@ -198,8 +218,9 @@ class RackspaceIdentity(object):
 
     def _populate_user_domain(self, token_data):
         # Store user's domain since not included in auth response
-        token_data['access']['user']['domain_id'] = self._user_ref[
-            const.RACKSPACE_DOMAIN_KEY]
+        if self._user_ref:
+            token_data['access']['user']['domain_id'] = self._user_ref[
+                const.RACKSPACE_DOMAIN_KEY]
 
     def _assert_project_scope(self, token_data):
         sentinal = object()
@@ -226,6 +247,12 @@ class RackspaceIdentity(object):
     def get_user_by_name(self, username):
         self.authenticate()
         return self._get_user('/users', {'name': username})
+
+    @cache.memoize_token
+    def validate_token(self, token_id):
+        self.authenticate()
+        token = self._token_data['access']['token']['id']
+        return self.GET('/tokens/%s' % token_id, params=None, auth_token=token)
 
     def _authenticate(self):
         cached_data = cache.token_region.get(self._user_ref['id'])
@@ -262,11 +289,43 @@ class RackspaceIdentity(object):
             self._user_ref['id'])
         return token_data
 
+    def _token_authenticate(self):
+        hash_token = hashlib.sha1(self._token_id).hexdigest()
+        cached_data = cache.token_region.get(hash_token)
+        if cached_data:
+            return cached_data
+
+        headers = const.HEADERS.copy()
+        if self._x_forwarded_for:
+            headers['X-Forwarded-For'] = self._x_forwarded_for
+
+        LOG.info(_LI('Token authentication against v2.'))
+        token_data = self.POST(
+            '/tokens',
+            headers=headers,
+            data={
+                "auth": {
+                    "token": {
+                        "id": self._token_id,
+                    },
+                    "tenantId": self._scope_project_id,
+                },
+            },
+            expected_status=requests.codes.ok
+        )
+
+        cache.token_region.set(hash_token, token_data)
+        return token_data
+
     def authenticate(self):
         if self._token_data:
             return self._token_data
 
-        self._token_data = self._authenticate()
+        if self._token_id:
+            # TODO(jorge.munoz): Fix log messages for assertions
+            self._token_data = self._token_authenticate()
+        else:
+            self._token_data = self._authenticate()
 
         if self._user_domain_id or self._user_domain_name:
             self._assert_user_domain(self._token_data)
@@ -276,7 +335,7 @@ class RackspaceIdentity(object):
         if self._scope_domain_id:
             self._assert_domain_scope(self._token_data)
 
-        if self._scope_project_id:
+        if self._scope_project_id or self._token_id:
             self._assert_project_scope(self._token_data)
 
         LOG.info(_LI('Successfully authenticated user %s against v2.'),
@@ -300,9 +359,19 @@ class RackspaceIdentityAdmin(RackspaceIdentity):
         return self._token_data
 
 
-class Password(auth.AuthMethodHandler):
+def determine_x_forwarded_for_header(context):
+        if not context:
+            return
 
-    def _get_scope(self, context):
+        if 'x-forwarded-for' not in context.get('header', []):
+            return context['environment']['REMOTE_ADDR']
+        else:
+            return '{0}, {1}'.format(
+                context['header']['x-forwarded-for'],
+                context['environment']['REMOTE_ADDR'])
+
+
+def get_scope(context):
         auth_params = context['environment']['openstack.params']['auth']
         scope = auth_params.get('scope', {})
 
@@ -311,6 +380,9 @@ class Password(auth.AuthMethodHandler):
             return {}
 
         return scope
+
+
+class Password(auth.AuthMethodHandler):
 
     def _validate_auth_data(self, auth_payload):
         """Validate authentication payload."""
@@ -334,14 +406,14 @@ class Password(auth.AuthMethodHandler):
         user_domain_id = auth_payload['user'].get('domain', {}).get('id')
         user_domain_name = auth_payload['user'].get('domain', {}).get('name')
 
-        scope = self._get_scope(context)
+        scope = get_scope(context)
         scope_domain_id = scope.get('domain', {}).get('id')
         scope_project_id = scope.get('project', {}).get('id')
         # TODO(dolph): if (domain_id and project_id), raise a 400
 
         username = auth_payload['user'].get('name')
 
-        x_forwarded_for = self._determine_x_forwarded_for_header(context)
+        x_forwarded_for = determine_x_forwarded_for_header(context)
         try:
             if not username:
                 identity = RackspaceIdentity.from_user_id(
@@ -371,13 +443,34 @@ class Password(auth.AuthMethodHandler):
         auth_context['user_id'] = token_data['access']['user']['id']
         auth_context[const.TOKEN_RESPONSE] = token_data
 
-    def _determine_x_forwarded_for_header(self, context):
-        if not context:
-            return
 
-        if 'x-forwarded-for' not in context.get('header', []):
-            return context['environment']['REMOTE_ADDR']
-        else:
-            return '{0}, {1}'.format(
-                context['header']['x-forwarded-for'],
-                context['environment']['REMOTE_ADDR'])
+class Token(auth.AuthMethodHandler):
+
+    def authenticate(self, context, auth_payload, auth_context):
+        if 'id' not in auth_payload or not auth_payload['id']:
+            raise exception.ValidationError(attribute='id', target='token')
+
+        scope = get_scope(context)
+        project_id = scope.get('project', {}).get('id')
+        project_name = scope.get('project', {}).get('name')
+        domain_id = scope.get('domain', {}).get('id')
+        # v2 only accepts project ids
+        scope_project_id = project_id or project_name or domain_id
+
+        if not scope_project_id:
+            raise exception.ValidationError('Invalid request. Specify scope '
+                                            'target.')
+        x_forwarded_for = determine_x_forwarded_for_header(context)
+        token_id = auth_payload['id']
+
+        try:
+            identity = RackspaceIdentity.from_token(
+                token_id,
+                scope_project_id=scope_project_id,
+                x_forwarded_for=x_forwarded_for)
+            token_data = identity.authenticate()
+        except Exception:
+            # Cache keystone exceptions from v2 client
+            raise
+        auth_context['user_id'] = token_data['access']['user']['id']
+        auth_context[const.TOKEN_RESPONSE] = token_data

@@ -37,6 +37,11 @@
       auth:
         method: password
         password: capstone
+        token: capstone
+      revoke:
+        driver: capstone
       oslo_policy:
         policy_file: /etc/capstone/policy.json
+      token:
+        enforce_token_bind: disabled
     service_user_role_id: "admin"
