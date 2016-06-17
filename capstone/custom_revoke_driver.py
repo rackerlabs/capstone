@@ -10,15 +10,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import os
-
-from keystone.common import config as keystone_config
-from oslo_config import cfg
-from oslo_log import log
+from keystone import revoke
 
 
-log.register_options(cfg.CONF)
-keystone_config.configure(cfg.CONF)
-keystone_conf = os.environ.get('KEYSTONE_CONFIG',
-                               '/etc/keystone/keystone.conf')
-cfg.CONF(args=[], project='capstone', default_config_files=[keystone_conf])
+class Revoke(revoke.RevokeDriverV8):
+
+    def list_events(self, last_fetch=None):
+        return []
+
+    def revoke(self, event):
+        pass
