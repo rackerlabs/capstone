@@ -37,3 +37,5 @@ token_map_region.expiration_time = 90
 config_group = 'cache'
 memoize_user = oslo_cache.get_memoization_decorator(
     conf.CONF, user_region, config_group)
+memoize_token = oslo_cache.get_memoization_decorator(
+    conf.CONF, token_region, config_group)

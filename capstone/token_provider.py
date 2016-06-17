@@ -24,6 +24,7 @@ from keystone.token.providers import common
 from oslo_log import log
 import six
 
+from capstone.client import v2
 from capstone import const
 
 
@@ -232,9 +233,22 @@ class Provider(common.BaseProvider):
             self.v3_token_data_helper = None
 
     def validate_non_persistent_token(self, token_id):
-        raise exception.ForbiddenNotSecurity(
-            'The requested operation is forbidden because token validation is'
-            ' not supported by the v3 API; use v2.0 instead.')
+        admin_client = v2.RackspaceIdentityAdmin.from_config()
+        admin_client.authenticate()
+        # Use v2 admin client to validate token.
+        token_data = admin_client.validate_token(token_id)
+        user_id = token_data['access']['user']['id']
+        # Use v2 admin client to retrieve the user associated with the token
+        # in order to set the user's domain id.
+        user_ref = admin_client.get_user(user_id)
+        token_data['access']['user']['domain_id'] = user_ref[
+            const.RACKSPACE_DOMAIN_KEY]
+        token_data_helper = RackspaceTokenDataHelper(token_data)
+        # V2 validate token does not return a service catalog.
+        method_names = token_data['access']['token']['RAX-AUTH:authenticatedBy']
+        return token_data_helper.get_token_data(user_id,
+                                                method_names,
+                                                include_catalog=False)
 
     def validate_v3_token(self, token_ref):
         raise exception.ForbiddenNotSecurity(
