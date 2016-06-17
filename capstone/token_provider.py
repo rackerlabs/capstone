@@ -24,6 +24,7 @@ from keystone.token.providers import common
 from oslo_log import log
 import six
 
+from capstone import auth_plugin
 from capstone import const
 
 
@@ -51,15 +52,16 @@ class RackspaceTokenDataHelper(object):
         }
 
     def _populate_user(self, token_data, user_id, trust):
-        domain_id = self._token_data['access']['user']['domain_id']
         token_data['user'] = {
             'id': self._token_data['access']['user']['id'],
             'name': self._token_data['access']['user']['name'],
-            'domain': {
-                'id': domain_id,
-                'name': domain_id,
-            },
         }
+        if 'domain_id' in self._token_data['access']['user']:
+            domain_id = self._token_data['access']['user']['domain_id']
+            token_data['user']['domain'] = {
+                'id': domain_id,
+                'name': domain_id
+            }
 
     def _populate_roles(self, token_data, user_id, domain_id, project_id,
                         trust, access_token):
@@ -232,9 +234,13 @@ class Provider(common.BaseProvider):
             self.v3_token_data_helper = None
 
     def validate_non_persistent_token(self, token_id):
-        raise exception.ForbiddenNotSecurity(
-            'The requested operation is forbidden because token validation is'
-            ' not supported by the v3 API; use v2.0 instead.')
+        admin_client = auth_plugin.RackspaceIdentityAdmin.from_config()
+        admin_client.authenticate()
+        resp = admin_client.validate_token(token_id)
+        token_data_helper = RackspaceTokenDataHelper(resp)
+        return token_data_helper.get_token_data(resp['access']['user']['id'],
+                                                ["token", "password"],
+                                                include_catalog=False)
 
     def validate_v3_token(self, token_ref):
         raise exception.ForbiddenNotSecurity(
