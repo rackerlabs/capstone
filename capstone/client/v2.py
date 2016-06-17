@@ -10,6 +10,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import hashlib
+
 from keystone.common import utils
 from keystone import exception
 from keystone.i18n import _LI
@@ -282,12 +284,85 @@ class RackspaceIdentity(object):
         return self._token_data
 
 
+class RackspaceIdentityToken(RackspaceIdentity):
+
+    def __init__(self, token_id, scope_project_id, user_ref,
+                 x_forwarded_for=None):
+        super(RackspaceIdentityToken, self).__init__(token_id,
+                                                     scope_project_id,
+                                                     user_ref,
+                                                     x_forwarded_for=None)
+        self._token_id = token_id
+        self._scope_project_id = scope_project_id
+        self._user_ref = user_ref
+        self._x_forwarded_for = x_forwarded_for
+        self._token_data = None
+
+    @classmethod
+    def from_token(cls, token_id, scope_project_id,
+                   user_ref=None, x_forwarded_for=None):
+        admin_client = RackspaceIdentityAdmin.from_config()
+        admin_client.authenticate()
+        token_data = admin_client.validate_token(token_id)
+        user_id = token_data['access']['user']['id']
+        user_ref = admin_client.get_user(user_id)
+        return cls(token_id, scope_project_id,
+                   user_ref=user_ref,
+                   x_forwarded_for=x_forwarded_for)
+
+    def _token_authenticate(self):
+        hash_token = hashlib.sha1(self._token_id).hexdigest()
+        cached_data = cache.token_region.get(hash_token)
+        if cached_data:
+            return cached_data
+
+        headers = const.HEADERS.copy()
+        if self._x_forwarded_for:
+            headers['X-Forwarded-For'] = self._x_forwarded_for
+
+        LOG.info(_LI('Token authentication against v2.'))
+        token_data = self.POST(
+            '/tokens',
+            headers=headers,
+            data={
+                "auth": {
+                    "token": {
+                        "id": self._token_id,
+                    },
+                    "tenantId": self._scope_project_id,
+                },
+            },
+            expected_status=requests.codes.ok
+        )
+
+        cache.token_region.set(hash_token, token_data)
+        return token_data
+
+    def authenticate(self):
+        if self._token_data:
+            return self._token_data
+
+        self._token_data = self._token_authenticate()
+        self._populate_user_domain(self._token_data)
+        self._assert_project_scope(self._token_data)
+
+        LOG.info(_LI('Successfully authenticated token SHA1{%s} against v2.'),
+                 hashlib.sha1(self._token_id).hexdigest())
+        return self._token_data
+
+
 class RackspaceIdentityAdmin(RackspaceIdentity):
 
     @classmethod
     def from_config(cls):
         return cls(conf.admin_username, conf.admin_password,
                    {'id': conf.admin_user_id})
+
+    @cache.memoize_token
+    def validate_token(self, token_id):
+        self.authenticate()
+        token = self._token_data['access']['token']['id']
+        return self.GET('/tokens/%s' % token_id, params=None, auth_token=token)
 
     def authenticate(self):
         if self._token_data:
