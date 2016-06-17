@@ -15,8 +15,8 @@ import uuid
 from keystone import exception
 import testtools
 
-from capstone import auth_plugin
 from capstone.client import v2
+from capstone.common import utils
 
 
 class TestRackspaceIdentity(testtools.TestCase):
@@ -185,8 +185,7 @@ class TestRackspaceIdentity(testtools.TestCase):
             }
         }
 
-        plugin = auth_plugin.Password()
-        header = plugin._determine_x_forwarded_for_header(context)
+        header = utils.determine_x_forwarded_for_header(context)
         self.assertEqual(header, '127.0.0.1')
 
     def test_update_headers_with_existing_x_forwarded_for_header(self):
@@ -199,15 +198,12 @@ class TestRackspaceIdentity(testtools.TestCase):
             }
         }
 
-        plugin = auth_plugin.Password()
-        header = plugin._determine_x_forwarded_for_header(context)
+        header = utils.determine_x_forwarded_for_header(context)
         self.assertEqual(header, '127.0.0.3, 127.0.0.1')
 
     def test_update_headers_with_x_forwarded_for_header_without_context(self):
-        plugin = auth_plugin.Password()
-
-        header = plugin._determine_x_forwarded_for_header(context=None)
+        header = utils.determine_x_forwarded_for_header(context=None)
         self.assertIsNone(header)
 
-        header = plugin._determine_x_forwarded_for_header(context={})
+        header = utils.determine_x_forwarded_for_header(context={})
         self.assertIsNone(header)

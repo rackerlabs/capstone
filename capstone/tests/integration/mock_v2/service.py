@@ -17,6 +17,7 @@ import uuid
 
 import flask
 from flask import request
+from keystone import exception
 
 
 application = flask.Flask('v2')
@@ -37,6 +38,18 @@ def unauthorized():
         }
     })
     response.status_code = 401
+    return response
+
+
+def bad_request(error_msg):
+    """Return a 400 Bad Request response."""
+    response = flask.json.jsonify(**{
+        "badRequest": {
+            "message": error_msg,
+            "code": 400
+        }
+    })
+    response.status_code = 400
     return response
 
 
@@ -90,19 +103,45 @@ def get_user_by_id(user_id):
     })
 
 
-@application.route('/v2.0/tokens', methods=['POST'])
-def authenticate():
-    username = request.json['auth']['passwordCredentials']['username']
-    password = request.json['auth']['passwordCredentials']['password']
+def get_username_for_valid_token_request(json):
+    if json['auth']['token'].get('id') == 'invalid':
+        raise exception.Unauthorized()
+
+    if not json['auth'].get('tenantId'):
+        raise exception.ValidationError('Invalid request. Specify tenantId.')
+
+    return 'test'
+
+
+def get_username_for_valid_password_request(json):
+    username = json['auth']['passwordCredentials']['username']
+    password = json['auth']['passwordCredentials']['password']
 
     # Authentication is forbidden for 'disabled' user
     if username == 'disabled':
-        return forbidden()
+        raise exception.ForbiddenNotSecurity('Disabled user.')
 
     # Authentication is valid if the password is the SHA1 hexdigest of the
     # username.
     if hash_str(username) != password:
+        raise exception.Unauthorized()
+
+    return username
+
+
+@application.route('/v2.0/tokens', methods=['POST'])
+def authenticate():
+    try:
+        if 'token' in request.json['auth']:
+            username = get_username_for_valid_token_request(request.json)
+        else:
+            username = get_username_for_valid_password_request(request.json)
+    except exception.Unauthorized:
         return unauthorized()
+    except exception.ValidationError as e:
+        return bad_request(e.message)
+    except exception.ForbiddenNotSecurity:
+        return forbidden()
 
     token_id = uuid.uuid4().hex
     tenant_id = hash_str('account_id', username)
