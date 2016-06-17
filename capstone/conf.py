@@ -12,8 +12,8 @@
 
 import logging
 import os
-import sys
 
+from keystone.common import config
 from oslo_config import cfg
 
 
@@ -61,9 +61,15 @@ CONF.register_opt(
                     'enabled.'),
     group='capstone')
 
-# Setup cache invalidator configuration
-if os.path.basename(sys.argv[0]) == 'capstone-cache-invalidator':
-    CONF(default_config_files=[])
+# Initialize configuration if 'default_config_files' is not an element of CONF.
+if 'default_config_files' not in dir(CONF):
+    config.configure()
+    # Set default config values and load keystone.conf to setup caching
+    # configurations.
+    config.set_config_defaults()
+    keystone_conf = os.environ.get('KEYSTONE_CONFIG',
+                                   '/etc/keystone/keystone.conf')
+    CONF(args=[], default_config_files=[keystone_conf])
     logging_config_file = os.environ.get('CACHE_INVALIDATOR_LOGGING_CONFIG',
                                          '/etc/keystone/logging.conf')
     logging.config.fileConfig(logging_config_file)
