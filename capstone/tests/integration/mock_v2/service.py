@@ -92,17 +92,21 @@ def get_user_by_id(user_id):
 
 @application.route('/v2.0/tokens', methods=['POST'])
 def authenticate():
-    username = request.json['auth']['passwordCredentials']['username']
-    password = request.json['auth']['passwordCredentials']['password']
 
-    # Authentication is forbidden for 'disabled' user
-    if username == 'disabled':
-        return forbidden()
+    if 'token' in request.json['auth']:
+        username = 'test'
+    else:
+        username = request.json['auth']['passwordCredentials']['username']
+        password = request.json['auth']['passwordCredentials']['password']
 
-    # Authentication is valid if the password is the SHA1 hexdigest of the
-    # username.
-    if hash_str(username) != password:
-        return unauthorized()
+        # Authentication is forbidden for 'disabled' user
+        if username == 'disabled':
+            return forbidden()
+
+        # Authentication is valid if the password is the SHA1 hexdigest of the
+        # username.
+        if hash_str(username) != password:
+            return unauthorized()
 
     token_id = uuid.uuid4().hex
     tenant_id = hash_str('account_id', username)

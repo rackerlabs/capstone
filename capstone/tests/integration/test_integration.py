@@ -130,6 +130,20 @@ def generate_password_auth_data_with_scope(user, scope):
     }
 
 
+def generate_token_auth_data_with_scope(token_id, scope):
+    return {
+        "auth": {
+            "identity": {
+                "methods": ["token"],
+                "token": {
+                    "id": token_id,
+                },
+            },
+            "scope": scope,
+        },
+    }
+
+
 class TestGettingADefaultScopedToken(BaseIntegrationTests):
 
     def test_with_username(self):
@@ -414,6 +428,44 @@ class TestGettingADomainScopedToken(BaseIntegrationTests):
             },
             scope={"domain": {"id": uuid.uuid4().hex}})
         self.authenticate(data, httplib.UNAUTHORIZED)
+
+
+class TestTokenAuthentication(BaseIntegrationTests):
+
+    def test(self):
+        data = generate_password_auth_data({
+            "name": self.username,
+            "password": self.password,
+        })
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+
+        data = generate_token_auth_data_with_scope(
+            token_id=token,
+            scope={"project": {"id": self.project_id}})
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+        self.assertValidTokenResponse(resp)
+
+    def test_with_invalid_project(self):
+        data = generate_password_auth_data({
+            "name": self.username,
+            "password": self.password,
+        })
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+
+        data = generate_token_auth_data_with_scope(
+            token_id=token,
+            scope={"project": {"id": 'invalid'}})
+        self.authenticate(data, httplib.UNAUTHORIZED)
+
+    def test_with_empty_token_id(self):
+        data = generate_token_auth_data_with_scope(
+            token_id='',
+            scope={"project": {"id": 'invalid'}})
+        self.authenticate(data, httplib.BAD_REQUEST)
 
 
 class TestCapstonePolicy(BaseIntegrationTests):
