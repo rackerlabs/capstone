@@ -65,10 +65,16 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     entry_points={
         'keystone.auth.password': [
-            'capstone = capstone.auth_plugin:Password',
+            'capstone = capstone.auth.plugins.password:Password',
+        ],
+        'keystone.auth.token': [
+            'capstone = capstone.auth.plugins.token:Token',
         ],
         'keystone.token.provider': [
             'capstone = capstone.token_provider:Provider',
+        ],
+        'keystone.revoke': [
+            'capstone = capstone.revoke.backends.noop:Revoke',
         ],
         'console_scripts': [
             'capstone-cache-invalidator = capstone.cache_invalidator:main'

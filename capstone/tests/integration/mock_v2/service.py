@@ -40,6 +40,18 @@ def unauthorized():
     return response
 
 
+def bad_request(error_msg):
+    """Return a 400 Bad Request response."""
+    response = flask.json.jsonify(**{
+        "badRequest": {
+            "message": error_msg,
+            "code": 400
+        }
+    })
+    response.status_code = 400
+    return response
+
+
 def forbidden():
     """Return a 403 Forbidden response."""
     response = flask.json.jsonify(**{
@@ -50,6 +62,18 @@ def forbidden():
     })
     response.status_code = 403
     return response
+
+
+class Unauthorized(Exception):
+    pass
+
+
+class Forbidden(Exception):
+    pass
+
+
+class BadRequest(Exception):
+    pass
 
 
 @application.route('/v2.0/users', methods=['GET'])
@@ -90,19 +114,45 @@ def get_user_by_id(user_id):
     })
 
 
-@application.route('/v2.0/tokens', methods=['POST'])
-def authenticate():
-    username = request.json['auth']['passwordCredentials']['username']
-    password = request.json['auth']['passwordCredentials']['password']
+def get_username_for_valid_token_request(json):
+    if json['auth']['token'].get('id') == 'invalid':
+        raise Unauthorized()
+
+    if not json['auth'].get('tenantId'):
+        raise BadRequest('Invalid request. Specify tenantId.')
+
+    return 'test'
+
+
+def get_username_for_valid_password_request(json):
+    username = json['auth']['passwordCredentials']['username']
+    password = json['auth']['passwordCredentials']['password']
 
     # Authentication is forbidden for 'disabled' user
     if username == 'disabled':
-        return forbidden()
+        raise Forbidden('Disabled user.')
 
     # Authentication is valid if the password is the SHA1 hexdigest of the
     # username.
     if hash_str(username) != password:
+        raise Unauthorized()
+
+    return username
+
+
+@application.route('/v2.0/tokens', methods=['POST'])
+def authenticate():
+    try:
+        if 'token' in request.json['auth']:
+            username = get_username_for_valid_token_request(request.json)
+        else:
+            username = get_username_for_valid_password_request(request.json)
+    except Unauthorized:
         return unauthorized()
+    except BadRequest as e:
+        return bad_request(e.message)
+    except Forbidden:
+        return forbidden()
 
     token_id = uuid.uuid4().hex
     tenant_id = hash_str('account_id', username)
