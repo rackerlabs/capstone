@@ -67,8 +67,14 @@ setuptools.setup(
         'keystone.auth.password': [
             'capstone = capstone.auth_plugin:Password',
         ],
+        'keystone.auth.token': [
+            'capstone = capstone.auth_plugin:Token',
+        ],
         'keystone.token.provider': [
             'capstone = capstone.token_provider:Provider',
+        ],
+        'keystone.revoke': [
+            'capstone = capstone.custom_revoke_driver:Revoke',
         ],
         'console_scripts': [
             'capstone-cache-invalidator = capstone.cache_invalidator:main'
