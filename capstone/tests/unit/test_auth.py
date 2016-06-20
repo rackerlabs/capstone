@@ -16,6 +16,7 @@ from keystone import exception
 import testtools
 
 from capstone import auth_plugin
+from capstone.client import v2
 
 
 class TestRackspaceIdentity(testtools.TestCase):
@@ -40,7 +41,7 @@ class TestRackspaceIdentity(testtools.TestCase):
             }
         }
         user_ref = {}
-        identity = auth_plugin.RackspaceIdentity(
+        identity = v2.RackspaceIdentity(
             self.username, self.password, user_ref,
             user_domain_id=self.domain)
         identity._assert_user_domain(token_data)
@@ -59,7 +60,7 @@ class TestRackspaceIdentity(testtools.TestCase):
             }
         }
         user_ref = {}
-        identity = auth_plugin.RackspaceIdentity(
+        identity = v2.RackspaceIdentity(
             self.username, self.password, user_ref,
             user_domain_name=self.domain)
         identity._assert_user_domain(token_data)
@@ -77,7 +78,7 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        identity = auth_plugin.RackspaceIdentity(
+        identity = v2.RackspaceIdentity(
             self.username, self.password,
             user_domain_id=self.domain,
             user_ref={'RAX-AUTH:domainId': self.domain})
@@ -96,7 +97,7 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        identity = auth_plugin.RackspaceIdentity(
+        identity = v2.RackspaceIdentity(
             self.username, self.password, user_domain_name=self.domain,
             user_ref={'RAX-AUTH:domainId': self.domain})
         identity._assert_user_domain(token_data)
@@ -113,7 +114,7 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        identity = auth_plugin.RackspaceIdentity(
+        identity = v2.RackspaceIdentity(
             self.username, self.password,
             scope_domain_id=self.domain,
             user_ref={'RAX-AUTH:domainId': uuid.uuid4().hex})
@@ -133,7 +134,7 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        identity = auth_plugin.RackspaceIdentity(
+        identity = v2.RackspaceIdentity(
             self.username, self.password,
             scope_domain_id=self.domain,
             user_ref={'RAX-AUTH:domainId': self.domain})
@@ -152,7 +153,7 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        identity = auth_plugin.RackspaceIdentity(
+        identity = v2.RackspaceIdentity(
             self.username, self.password,
             scope_domain_id=self.domain,
             user_ref={'RAX-AUTH:domainId': self.domain})
@@ -170,7 +171,7 @@ class TestRackspaceIdentity(testtools.TestCase):
                 }
             }
         }
-        identity = auth_plugin.RackspaceIdentity(
+        identity = v2.RackspaceIdentity(
             self.username, self.password,
             scope_domain_id=self.domain,
             user_ref={'RAX-AUTH:domainId': uuid.uuid4().hex})
