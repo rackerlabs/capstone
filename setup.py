@@ -62,7 +62,7 @@ setuptools.setup(
         'Programming Language :: Python :: 2.7',
     ],
     license='Apache 2.0',
-    packages=['capstone'],
+    packages=['capstone', 'capstone.client'],
     entry_points={
         'keystone.auth.password': [
             'capstone = capstone.auth_plugin:Password',

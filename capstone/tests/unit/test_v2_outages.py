@@ -18,7 +18,7 @@ import requests
 from requests import exceptions as req_ex
 import testtools
 
-from capstone import auth_plugin
+from capstone.client import v2
 from capstone import exception
 
 
@@ -74,72 +74,72 @@ class TestV2Outages(testtools.TestCase):
         get_resp._content = self._get_user()
         return get_resp
 
-    @mock.patch('capstone.auth_plugin.requests.post')
-    @mock.patch('capstone.auth_plugin.requests.get')
+    @mock.patch('capstone.client.v2.requests.post')
+    @mock.patch('capstone.client.v2.requests.get')
     def test_v2_get_user_timeout(self, get_mock, post_mock):
         get_mock.side_effect = [self._valid_get_response(),
                                 req_ex.Timeout('Timeout')]
         post_mock.return_value = self._valid_post_response()
 
-        identity = auth_plugin.RackspaceIdentity.from_username(
+        identity = v2.RackspaceIdentity.from_username(
             self.username, self.password, user_domain_id=self.domain_id)
 
         self.assertRaises(exception.BadGateway,
                           identity.get_user, self.user_id)
 
-    @mock.patch('capstone.auth_plugin.requests.post')
-    @mock.patch('capstone.auth_plugin.requests.get')
+    @mock.patch('capstone.client.v2.requests.post')
+    @mock.patch('capstone.client.v2.requests.get')
     def test_v2_get_user_by_name_timeout(self, get_mock, post_mock):
         get_mock.side_effect = [self._valid_get_response(),
                                 req_ex.Timeout('Timeout')]
         post_mock.return_value = self._valid_post_response()
 
-        identity = auth_plugin.RackspaceIdentity.from_username(
+        identity = v2.RackspaceIdentity.from_username(
             self.username, self.password, user_domain_id=self.domain_id)
 
         self.assertRaises(exception.BadGateway,
                           identity.get_user_by_name, self.username)
 
-    @mock.patch('capstone.auth_plugin.requests.post')
-    @mock.patch('capstone.auth_plugin.requests.get')
+    @mock.patch('capstone.client.v2.requests.post')
+    @mock.patch('capstone.client.v2.requests.get')
     def test_v2_get_user_connection_error(self, get_mock, post_mock):
         get_mock.side_effect = [self._valid_get_response(),
                                 req_ex.ConnectionError('ConnectionError')]
         post_mock.return_value = self._valid_post_response()
 
-        identity = auth_plugin.RackspaceIdentity.from_username(
+        identity = v2.RackspaceIdentity.from_username(
             self.username, self.password, user_domain_id=self.domain_id)
 
         self.assertRaises(exception.BadGateway,
                           identity.get_user, self.user_id)
 
-    @mock.patch('capstone.auth_plugin.requests.post')
-    @mock.patch('capstone.auth_plugin.requests.get')
+    @mock.patch('capstone.client.v2.requests.post')
+    @mock.patch('capstone.client.v2.requests.get')
     def test_v2_get_user_by_name_connection_error(self, get_mock, post_mock):
         get_mock.side_effect = [self._valid_get_response(),
                                 req_ex.ConnectionError('ConnectionError')]
         post_mock.return_value = self._valid_post_response()
 
-        identity = auth_plugin.RackspaceIdentity.from_username(
+        identity = v2.RackspaceIdentity.from_username(
             self.username, self.password, user_domain_id=self.domain_id)
 
         self.assertRaises(exception.BadGateway,
                           identity.get_user, self.user_id)
 
-    @mock.patch('capstone.auth_plugin.requests.post')
-    @mock.patch('capstone.auth_plugin.requests.get')
+    @mock.patch('capstone.client.v2.requests.post')
+    @mock.patch('capstone.client.v2.requests.get')
     def test_v2_authenticate_connection_error(self, get_mock, post_mock):
         get_mock.return_value = self._valid_get_response()
         post_mock.side_effect = [self._valid_post_response(),
                                  req_ex.ConnectionError('ConnectionError')]
 
-        identity = auth_plugin.RackspaceIdentity.from_username(
+        identity = v2.RackspaceIdentity.from_username(
             self.username, self.password, user_domain_id=self.domain_id)
 
         self.assertRaises(exception.BadGateway, identity.authenticate)
 
-    @mock.patch('capstone.auth_plugin.requests.post')
-    @mock.patch('capstone.auth_plugin.requests.get')
+    @mock.patch('capstone.client.v2.requests.post')
+    @mock.patch('capstone.client.v2.requests.get')
     def test_v2_authentication_with_intermittent_failures(self, get_mock,
                                                           post_mock):
         # Requests timeout exception
@@ -151,7 +151,7 @@ class TestV2Outages(testtools.TestCase):
                                  timeout_ex,
                                  self._valid_post_response()]
 
-        identity = auth_plugin.RackspaceIdentity.from_username(
+        identity = v2.RackspaceIdentity.from_username(
             self.username, self.password, user_domain_id=self.domain_id)
 
         self.assertRaises(exception.BadGateway, identity.authenticate)
