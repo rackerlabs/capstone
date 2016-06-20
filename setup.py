@@ -16,6 +16,7 @@ import os
 import subprocess
 
 import setuptools
+from setuptools import find_packages
 
 
 VERSION = '0.1'
@@ -62,7 +63,7 @@ setuptools.setup(
         'Programming Language :: Python :: 2.7',
     ],
     license='Apache 2.0',
-    packages=['capstone'],
+    packages=find_packages(),
     entry_points={
         'keystone.auth.password': [
             'capstone = capstone.auth_plugin:Password',
