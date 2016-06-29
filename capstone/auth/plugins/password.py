@@ -20,6 +20,13 @@ from capstone import const
 
 class Password(auth.AuthMethodHandler):
 
+    def _validate_scope(self, scope):
+        scope_project_name = scope.get('project', {}).get('name')
+        if scope_project_name:
+            if 'domain' not in scope['project']:
+                raise exception.ValidationError(attribute='domain',
+                                                target='project')
+
     def _validate_auth_data(self, auth_payload):
         """Validate authentication payload."""
         if 'user' not in auth_payload:
@@ -37,14 +44,19 @@ class Password(auth.AuthMethodHandler):
 
     def authenticate(self, context, auth_payload, auth_context):
         """Try to authenticate against the identity backend."""
+        scope = utils.get_scope(context)
         self._validate_auth_data(auth_payload)
+        self._validate_scope(scope)
 
         user_domain_id = auth_payload['user'].get('domain', {}).get('id')
         user_domain_name = auth_payload['user'].get('domain', {}).get('name')
 
-        scope = utils.get_scope(context)
         scope_domain_id = scope.get('domain', {}).get('id')
         scope_project_id = scope.get('project', {}).get('id')
+        scope_project_name = scope.get('project', {}).get('name')
+        scope_project_domain = scope.get('project', {}).get('domain', {})
+        scope_project_domain_id = scope_project_domain.get('id')
+        scope_project_domain_name = scope_project_domain.get('name')
         # TODO(dolph): if (domain_id and project_id), raise a 400
 
         username = auth_payload['user'].get('name')
@@ -58,6 +70,9 @@ class Password(auth.AuthMethodHandler):
                 user_domain_name=user_domain_name,
                 scope_domain_id=scope_domain_id,
                 scope_project_id=scope_project_id,
+                scope_project_name=scope_project_name,
+                scope_project_domain_id=scope_project_domain_id,
+                scope_project_domain_name=scope_project_domain_name,
                 x_forwarded_for=x_forwarded_for)
         else:
             identity = v2.RackspaceIdentity.from_username(
@@ -67,6 +82,9 @@ class Password(auth.AuthMethodHandler):
                 user_domain_name=user_domain_name,
                 scope_domain_id=scope_domain_id,
                 scope_project_id=scope_project_id,
+                scope_project_name=scope_project_name,
+                scope_project_domain_id=scope_project_domain_id,
+                scope_project_domain_name=scope_project_domain_name,
                 x_forwarded_for=x_forwarded_for)
         token_data = identity.authenticate()
 
