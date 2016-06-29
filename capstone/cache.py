@@ -22,6 +22,10 @@ oslo_cache.configure_cache_region(cfg.CONF, user_region)
 token_region = oslo_cache.create_region()
 oslo_cache.configure_cache_region(cfg.CONF, token_region)
 
+project_region = oslo_cache.create_region()
+oslo_cache.configure_cache_region(cfg.CONF, project_region)
+
+
 # Ideally, this would be set to just under 24 hours (such as 23.5 hours), so
 # that we cache tokens for as long as possible without returning expired
 # tokens.
@@ -39,3 +43,5 @@ memoize_user = oslo_cache.get_memoization_decorator(
     conf.CONF, user_region, config_group)
 memoize_token = oslo_cache.get_memoization_decorator(
     conf.CONF, token_region, config_group)
+memoize_project = oslo_cache.get_memoization_decorator(
+    conf.CONF, project_region, config_group)
