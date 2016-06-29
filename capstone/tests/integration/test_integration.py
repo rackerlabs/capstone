@@ -384,6 +384,7 @@ class TestGettingAProjectScopedToken(BaseIntegrationTests):
         self.assertTokenIsUseable(token)
         self.assertValidTokenResponse(resp)
 
+    # This test should fail
     def test_with_invalid_domain(self):
         data = generate_password_auth_data_with_scope(
             user={
@@ -394,6 +395,25 @@ class TestGettingAProjectScopedToken(BaseIntegrationTests):
             scope={
                 "project": {
                     "id": self.project_id,
+                    "domain": {"id": uuid.uuid4().hex},
+                }
+            })
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+        self.assertValidTokenResponse(resp)
+
+    # This test should fail
+    def test_with_invalid_project_name(self):
+        data = generate_password_auth_data_with_scope(
+            user={
+                "name": self.username,
+                "password": self.password,
+                "domain": {"id": self.domain_id},
+            },
+            scope={
+                "project": {
+                    "name": uuid.uuid4().hex,
                     "domain": {"id": uuid.uuid4().hex},
                 }
             })
