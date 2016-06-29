@@ -396,6 +396,28 @@ class TestGettingAProjectScopedToken(BaseIntegrationTests):
                     'domain': {'id': uuid.uuid4().hex},
                 }
             })
+        # The expected response should be a 401 since a random generated uuid
+        # is not a valid domain for project.
+        resp = self.authenticate(data)
+        token = resp.headers['X-Subject-Token']
+        self.assertTokenIsUseable(token)
+        self.assertValidTokenResponse(resp)
+
+    def test_with_invalid_project_name(self):
+        data = generate_password_auth_data_with_scope(
+            user={
+                "name": self.username,
+                "password": self.password,
+                "domain": {"id": self.domain_id},
+            },
+            scope={
+                "project": {
+                    "name": uuid.uuid4().hex,
+                    "domain": {"id": uuid.uuid4().hex},
+                }
+            })
+        # The expected response should be a 401 since test provide an invalid
+        # project name for scope.
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
         self.assertTokenIsUseable(token)
