@@ -33,7 +33,8 @@ class RackspaceIdentity(object):
     def from_username(cls, username, password,
                       user_domain_id=None, user_domain_name=None,
                       scope_domain_id=None, scope_project_id=None,
-                      x_forwarded_for=None):
+                      scope_project_name=None, scope_project_domain_id=None,
+                      scope_project_domain_name=None, x_forwarded_for=None):
         admin_client = RackspaceIdentityAdmin.from_config()
         admin_client.authenticate()
         try:
@@ -45,13 +46,17 @@ class RackspaceIdentity(object):
                    user_domain_name=user_domain_name,
                    scope_domain_id=scope_domain_id,
                    scope_project_id=scope_project_id,
+                   scope_project_name=scope_project_name,
+                   scope_project_domain_id=scope_project_domain_id,
+                   scope_project_domain_name=scope_project_domain_name,
                    x_forwarded_for=x_forwarded_for)
 
     @classmethod
     def from_user_id(cls, user_id, password,
                      user_domain_id=None, user_domain_name=None,
                      scope_domain_id=None, scope_project_id=None,
-                     x_forwarded_for=None):
+                     scope_project_name=None, scope_project_domain_id=None,
+                     scope_project_domain_name=None, x_forwarded_for=None):
         admin_client = RackspaceIdentityAdmin.from_config()
         admin_client.authenticate()
         try:
@@ -64,12 +69,16 @@ class RackspaceIdentity(object):
                    user_domain_name=user_domain_name,
                    scope_domain_id=scope_domain_id,
                    scope_project_id=scope_project_id,
+                   scope_project_name=scope_project_name,
+                   scope_project_domain_id=scope_project_domain_id,
+                   scope_project_domain_name=scope_project_domain_name,
                    x_forwarded_for=x_forwarded_for)
 
     def __init__(self, username, password, user_ref,
                  user_domain_id=None, user_domain_name=None,
                  scope_domain_id=None, scope_project_id=None,
-                 x_forwarded_for=None):
+                 scope_project_name=None, scope_project_domain_id=None,
+                 scope_project_domain_name=None, x_forwarded_for=None):
         self._username = username
         self._password = password
         self._user_ref = user_ref
@@ -77,6 +86,9 @@ class RackspaceIdentity(object):
         self._user_domain_name = user_domain_name
         self._scope_domain_id = scope_domain_id
         self._scope_project_id = scope_project_id
+        self._scope_project_name = scope_project_name
+        self._scope_project_domain_id = scope_project_domain_id
+        self._scope_project_domain_name = scope_project_domain_name
         self._x_forwarded_for = x_forwarded_for
         self._token_data = None
 
@@ -200,17 +212,47 @@ class RackspaceIdentity(object):
         token_data['access']['user']['domain_id'] = self._user_ref[
             const.RACKSPACE_DOMAIN_KEY]
 
+    def _assert_project_belongs_to_domain(self, token_data, project_domain):
+        # Ignore project's domain if project id is specified.
+        if self._scope_project_id:
+            return True
+        # If the project name matches the domain provided, then its safe to
+        # assume that the project belongs to domain.
+        if self._scope_project_name == project_domain:
+            return True
+
+        project = self.get_project_by_name(self._scope_project_name)
+        return project[const.RACKSPACE_DOMAIN_KEY] == project_domain
+
     def _assert_project_scope(self, token_data):
         sentinal = object()
         tenants = (role.get('tenantId', sentinal)
                    for role in token_data['access']['user']['roles'])
-        if self._scope_project_id not in tenants:
+        scope_project = self._scope_project_id or self._scope_project_name
+        if scope_project not in tenants:
             msg = (_LI('User %(u_name)s cannot scope to project %(p_id)s.') %
                    {'u_name': self._username, 'p_id': self._scope_project_id})
             LOG.info(msg)
             raise exception.Unauthorized(msg)
+        project_domain = (self._scope_project_domain_id
+                          or self._scope_project_domain_name)
+        if not self._assert_project_belongs_to_domain(token_data,
+                                                      project_domain):
+            msg = (_LI('User %(u_name)s cannot scope to project %(p_name)s '
+                       'with domain %(p_domain)s.') % {
+                   'u_name': self._username,
+                   'p_name': self._scope_project_name,
+                   'p_domain': project_domain})
+            LOG.info(msg)
+            raise exception.Unauthorized(msg)
         LOG.info(_LI('User %(u_name)s can scope to project %(p_id)s.'),
                  {'u_name': self._username, 'p_id': self._scope_project_id})
+
+    @cache.memoize_project
+    def get_project_by_name(self, project_name):
+        token = self._token_data['access']['token']['id']
+        return self.GET('/tenants', params={'name': project_name},
+                        auth_token=token)['tenant']
 
     @cache.memoize_user
     def _get_user(self, path, params):
@@ -281,7 +323,7 @@ class RackspaceIdentity(object):
         if self._scope_domain_id:
             self._assert_domain_scope(self._token_data)
 
-        if self._scope_project_id:
+        if self._scope_project_id or self._scope_project_name:
             self._assert_project_scope(self._token_data)
 
         LOG.info(_LI('Successfully authenticated user %s against v2.'),
