@@ -14,3 +14,5 @@ HEADERS = {'Content-Type': 'application/json'}
 
 RACKSPACE_DOMAIN_KEY = 'RAX-AUTH:domainId'
 TOKEN_RESPONSE = 'rackspace:token_response'
+
+TIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
