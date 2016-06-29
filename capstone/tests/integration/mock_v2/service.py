@@ -114,6 +114,23 @@ def get_user_by_id(user_id):
     })
 
 
+@application.route('/v2.0/tenants', methods=['GET'])
+def list_tenants():
+    tenant_name = request.args.get('name')
+
+    if not tenant_name:
+        raise NotImplementedError('List tenants not supported.')
+
+    return flask.json.jsonify(**{
+        "tenant": {
+            "RAX-AUTH:domainId": hash_str('account_id', tenant_name),
+            "enabled": True,
+            "id": tenant_name,
+            "name": tenant_name,
+        }
+    })
+
+
 def get_username_for_valid_token_request(json):
     if json['auth']['token'].get('id') == 'invalid':
         raise Unauthorized()
