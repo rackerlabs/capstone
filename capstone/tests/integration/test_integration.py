@@ -104,11 +104,11 @@ class BaseIntegrationTests(testtools.TestCase):
 
 def generate_password_auth_data(user_data):
     return {
-        "auth": {
-            "identity": {
-                "methods": ["password"],
-                "password": {
-                    "user": user_data,
+        'auth': {
+            'identity': {
+                'methods': ['password'],
+                'password': {
+                    'user': user_data,
                 },
             },
         },
@@ -117,28 +117,28 @@ def generate_password_auth_data(user_data):
 
 def generate_password_auth_data_with_scope(user, scope):
     return {
-        "auth": {
-            "identity": {
-                "methods": ["password"],
-                "password": {
-                    "user": user,
+        'auth': {
+            'identity': {
+                'methods': ['password'],
+                'password': {
+                    'user': user,
                 },
             },
-            "scope": scope,
+            'scope': scope,
         },
     }
 
 
 def generate_token_auth_data_with_scope(token_id, scope):
     return {
-        "auth": {
-            "identity": {
-                "methods": ["token"],
-                "token": {
-                    "id": token_id,
+        'auth': {
+            'identity': {
+                'methods': ['token'],
+                'token': {
+                    'id': token_id,
                 },
             },
-            "scope": scope,
+            'scope': scope,
         },
     }
 
@@ -148,8 +148,8 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
     def test_with_username(self):
         # NOTE(dstanek): legal in capstone, but not in keystone
         data = generate_password_auth_data({
-            "name": self.username,
-            "password": self.password,
+            'name': self.username,
+            'password': self.password,
         })
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
@@ -158,9 +158,9 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
 
     def test_with_username_and_domain_id(self):
         data = generate_password_auth_data({
-            "name": self.username,
-            "password": self.password,
-            "domain": {"id": self.domain_id},
+            'name': self.username,
+            'password': self.password,
+            'domain': {'id': self.domain_id},
         })
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
@@ -169,48 +169,48 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
 
     def test_with_incorrect_username_and_domain_id(self):
         data = generate_password_auth_data({
-            "name": uuid.uuid4().hex,
-            "password": self.password,
-            "domain": {"id": self.domain_id},
+            'name': uuid.uuid4().hex,
+            'password': self.password,
+            'domain': {'id': self.domain_id},
         })
         self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
     def test_with_empty_username(self):
         data = generate_password_auth_data({
-            "name": '',
-            "password": self.password,
-            "domain": {"id": self.domain_id},
+            'name': '',
+            'password': self.password,
+            'domain': {'id': self.domain_id},
         })
         self.authenticate(data, expected_status=httplib.BAD_REQUEST)
 
     def test_with_empty_password(self):
         data = generate_password_auth_data({
-            "name": self.username,
-            "password": '',
-            "domain": {"id": self.domain_id},
+            'name': self.username,
+            'password': '',
+            'domain': {'id': self.domain_id},
         })
         self.authenticate(data, expected_status=httplib.BAD_REQUEST)
 
     def test_with_no_password(self):
         data = generate_password_auth_data({
-            "name": self.username,
-            "domain": {"id": self.domain_id},
+            'name': self.username,
+            'domain': {'id': self.domain_id},
         })
         self.authenticate(data, expected_status=httplib.BAD_REQUEST)
 
     def test_with_no_username(self):
         data = generate_password_auth_data({
-            "password": self.password,
-            "domain": {"id": self.domain_id},
+            'password': self.password,
+            'domain': {'id': self.domain_id},
         })
         self.authenticate(data, expected_status=httplib.BAD_REQUEST)
 
     def test_with_no_user(self):
         data = {
-            "auth": {
-                "identity": {
-                    "methods": ["password"],
-                    "password": {
+            'auth': {
+                'identity': {
+                    'methods': ['password'],
+                    'password': {
                     },
                 },
             },
@@ -219,25 +219,25 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
 
     def test_with_username_and_incorrect_domain_id(self):
         data = generate_password_auth_data({
-            "name": self.username,
-            "password": self.password,
-            "domain": {"id": uuid.uuid4().hex},
+            'name': self.username,
+            'password': self.password,
+            'domain': {'id': uuid.uuid4().hex},
         })
         self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
     def test_with_disabled_user(self):
         data = generate_password_auth_data({
-            "name": 'disabled',
-            "password": self.password,
-            "domain": {"id": uuid.uuid4().hex},
+            'name': 'disabled',
+            'password': self.password,
+            'domain': {'id': uuid.uuid4().hex},
         })
         self.authenticate(data, expected_status=httplib.FORBIDDEN)
 
     def test_with_username_and_domain_name(self):
         data = generate_password_auth_data({
-            "name": self.username,
-            "password": self.password,
-            "domain": {"name": self.domain_id},
+            'name': self.username,
+            'password': self.password,
+            'domain': {'name': self.domain_id},
         })
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
@@ -246,16 +246,16 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
 
     def test_with_username_and_incorrect_domain_name(self):
         data = generate_password_auth_data({
-            "name": self.username,
-            "password": self.password,
-            "domain": {"name": uuid.uuid4().hex},
+            'name': self.username,
+            'password': self.password,
+            'domain': {'name': uuid.uuid4().hex},
         })
         self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
     def test_with_user_id(self):
         data = generate_password_auth_data({
-            "id": self.user_id,
-            "password": self.password,
+            'id': self.user_id,
+            'password': self.password,
         })
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
@@ -264,16 +264,16 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
 
     def test_with_incorrect_user_id(self):
         data = generate_password_auth_data({
-            "id": uuid.uuid4().hex,
-            "password": self.password,
+            'id': uuid.uuid4().hex,
+            'password': self.password,
         })
         self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
     def test_with_user_id_and_domain_id(self):
         data = generate_password_auth_data({
-            "id": self.user_id,
-            "password": self.password,
-            "domain": {"id": self.domain_id},
+            'id': self.user_id,
+            'password': self.password,
+            'domain': {'id': self.domain_id},
         })
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
@@ -282,17 +282,17 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
 
     def test_with_user_id_and_incorrect_domain_id(self):
         data = generate_password_auth_data({
-            "id": self.user_id,
-            "password": self.password,
-            "domain": {"id": uuid.uuid4().hex},
+            'id': self.user_id,
+            'password': self.password,
+            'domain': {'id': uuid.uuid4().hex},
         })
         self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
     def test_with_user_id_and_domain_name(self):
         data = generate_password_auth_data({
-            "id": self.user_id,
-            "password": self.password,
-            "domain": {"name": self.domain_id},
+            'id': self.user_id,
+            'password': self.password,
+            'domain': {'name': self.domain_id},
         })
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
@@ -301,17 +301,17 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
 
     def test_with_user_id_and_incorrect_domain_name(self):
         data = generate_password_auth_data({
-            "id": self.user_id,
-            "password": self.password,
-            "domain": {"name": uuid.uuid4().hex},
+            'id': self.user_id,
+            'password': self.password,
+            'domain': {'name': uuid.uuid4().hex},
         })
         self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
     def test_with_an_explicitly_unscoped_request(self):
         data = generate_password_auth_data_with_scope(
             user={
-                "id": self.user_id,
-                "password": self.password,
+                'id': self.user_id,
+                'password': self.password,
             },
             scope='unscoped')
         resp = self.authenticate(data)
@@ -328,8 +328,8 @@ class TestGettingADefaultScopedToken(BaseIntegrationTests):
         uncached_user_id = uuid.uuid4().hex
         uncached_password = hashlib.sha1(uncached_user_id).hexdigest()
         data = generate_password_auth_data({
-            "id": uncached_user_id,
-            "password": uncached_password,
+            'id': uncached_user_id,
+            'password': uncached_password,
         })
 
         resp = self.authenticate(data)
@@ -346,11 +346,11 @@ class TestGettingAProjectScopedToken(BaseIntegrationTests):
     def test(self):
         data = generate_password_auth_data_with_scope(
             user={
-                "name": self.username,
-                "password": self.password,
-                "domain": {"id": self.domain_id},
+                'name': self.username,
+                'password': self.password,
+                'domain': {'id': self.domain_id},
             },
-            scope={"project": {"id": self.project_id}})
+            scope={'project': {'id': self.project_id}})
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
         self.assertTokenIsUseable(token)
@@ -359,24 +359,24 @@ class TestGettingAProjectScopedToken(BaseIntegrationTests):
     def test_invalid(self):
         data = generate_password_auth_data_with_scope(
             user={
-                "name": self.username,
-                "password": self.password,
-                "domain": {"id": self.domain_id},
+                'name': self.username,
+                'password': self.password,
+                'domain': {'id': self.domain_id},
             },
-            scope={"project": {"id": uuid.uuid4().hex}})
+            scope={'project': {'id': uuid.uuid4().hex}})
         self.authenticate(data, expected_status=httplib.UNAUTHORIZED)
 
     def test_with_domain(self):
         data = generate_password_auth_data_with_scope(
             user={
-                "name": self.username,
-                "password": self.password,
-                "domain": {"id": self.domain_id},
+                'name': self.username,
+                'password': self.password,
+                'domain': {'id': self.domain_id},
             },
             scope={
-                "project": {
-                    "id": self.project_id,
-                    "domain": {"id": self.domain_id},
+                'project': {
+                    'id': self.project_id,
+                    'domain': {'id': self.domain_id},
                 }
             })
         resp = self.authenticate(data)
@@ -387,14 +387,14 @@ class TestGettingAProjectScopedToken(BaseIntegrationTests):
     def test_with_invalid_domain(self):
         data = generate_password_auth_data_with_scope(
             user={
-                "name": self.username,
-                "password": self.password,
-                "domain": {"id": self.domain_id},
+                'name': self.username,
+                'password': self.password,
+                'domain': {'id': self.domain_id},
             },
             scope={
-                "project": {
-                    "id": self.project_id,
-                    "domain": {"id": uuid.uuid4().hex},
+                'project': {
+                    'id': self.project_id,
+                    'domain': {'id': uuid.uuid4().hex},
                 }
             })
         resp = self.authenticate(data)
@@ -408,11 +408,11 @@ class TestGettingADomainScopedToken(BaseIntegrationTests):
     def test(self):
         data = generate_password_auth_data_with_scope(
             user={
-                "name": self.username,
-                "password": self.password,
-                "domain": {"id": self.domain_id},
+                'name': self.username,
+                'password': self.password,
+                'domain': {'id': self.domain_id},
             },
-            scope={"domain": {"id": self.domain_id}})
+            scope={'domain': {'id': self.domain_id}})
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
         self.assertTokenIsUseable(token)
@@ -421,11 +421,11 @@ class TestGettingADomainScopedToken(BaseIntegrationTests):
     def test_invalid(self):
         data = generate_password_auth_data_with_scope(
             user={
-                "name": self.username,
-                "password": self.password,
-                "domain": {"id": self.domain_id},
+                'name': self.username,
+                'password': self.password,
+                'domain': {'id': self.domain_id},
             },
-            scope={"domain": {"id": uuid.uuid4().hex}})
+            scope={'domain': {'id': uuid.uuid4().hex}})
         self.authenticate(data, httplib.UNAUTHORIZED)
 
 
@@ -433,15 +433,15 @@ class TestTokenAuthentication(BaseIntegrationTests):
 
     def test_with_project_id(self):
         data = generate_password_auth_data({
-            "name": self.username,
-            "password": self.password,
+            'name': self.username,
+            'password': self.password,
         })
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
 
         data = generate_token_auth_data_with_scope(
             token_id=token,
-            scope={"project": {"id": self.project_id}})
+            scope={'project': {'id': self.project_id}})
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
         self.assertTokenIsUseable(token)
@@ -450,70 +450,70 @@ class TestTokenAuthentication(BaseIntegrationTests):
     # NOTE(jorge.munoz): We currently don't support scoping using project name
     def test_with_project_name(self):
         data = generate_password_auth_data({
-            "name": self.username,
-            "password": self.password,
+            'name': self.username,
+            'password': self.password,
         })
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
 
         data = generate_token_auth_data_with_scope(
             token_id=token,
-            scope={"project": {"name": self.project_id}})
+            scope={'project': {'name': self.project_id}})
         resp = self.authenticate(data, httplib.BAD_REQUEST)
 
     def test_with_invalid_project_id(self):
         data = generate_password_auth_data({
-            "name": self.username,
-            "password": self.password,
+            'name': self.username,
+            'password': self.password,
         })
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
 
         data = generate_token_auth_data_with_scope(
             token_id=token,
-            scope={"project": {"id": "invalid"}})
+            scope={'project': {'id': 'invalid'}})
         self.authenticate(data, httplib.UNAUTHORIZED)
 
     def test_with_empty_project_id(self):
         data = generate_password_auth_data({
-            "name": self.username,
-            "password": self.password,
+            'name': self.username,
+            'password': self.password,
         })
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
 
         data = generate_token_auth_data_with_scope(
             token_id=token,
-            scope={"project": {"id": ""}})
+            scope={'project': {'id': ''}})
         self.authenticate(data, httplib.BAD_REQUEST)
 
     def test_with_domain_id(self):
         data = generate_password_auth_data({
-            "name": self.username,
-            "password": self.password,
+            'name': self.username,
+            'password': self.password,
         })
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
 
         data = generate_token_auth_data_with_scope(
             token_id=token,
-            scope={"domain": {"id": self.project_id}})
+            scope={'domain': {'id': self.project_id}})
         resp = self.authenticate(data, httplib.FORBIDDEN)
 
     def test_with_no_scope(self):
         data = generate_password_auth_data({
-            "id": self.username,
-            "password": self.password,
+            'id': self.username,
+            'password': self.password,
         })
         resp = self.authenticate(data)
         token = resp.headers['X-Subject-Token']
 
         data = {
-            "auth": {
-                "identity": {
-                    "methods": ["token"],
-                    "token": {
-                        "id": token,
+            'auth': {
+                'identity': {
+                    'methods': ['token'],
+                    'token': {
+                        'id': token,
                     },
                 },
             },
@@ -523,14 +523,14 @@ class TestTokenAuthentication(BaseIntegrationTests):
 
     def test_with_empty_token_id(self):
         data = generate_token_auth_data_with_scope(
-            token_id="",
-            scope={"project": {"id": self.project_id}})
+            token_id='',
+            scope={'project': {'id': self.project_id}})
         self.authenticate(data, httplib.BAD_REQUEST)
 
     def test_with_invalid_token_id(self):
         data = generate_token_auth_data_with_scope(
-            token_id="invalid",
-            scope={"project": {"id": self.project_id}})
+            token_id='invalid',
+            scope={'project': {'id': self.project_id}})
         self.authenticate(data, httplib.UNAUTHORIZED)
 
 
@@ -539,14 +539,14 @@ class TestCapstonePolicy(BaseIntegrationTests):
     def test_list_users_returns_unauthorized(self):
         data = generate_password_auth_data_with_scope(
             user={
-                "name": self.username,
-                "password": self.password,
-                "domain": {"id": self.domain_id},
+                'name': self.username,
+                'password': self.password,
+                'domain': {'id': self.domain_id},
             },
             scope={
-                "project": {
-                    "id": self.project_id,
-                    "domain": {"id": uuid.uuid4().hex},
+                'project': {
+                    'id': self.project_id,
+                    'domain': {'id': uuid.uuid4().hex},
                 }
             })
         resp = self.authenticate(data)

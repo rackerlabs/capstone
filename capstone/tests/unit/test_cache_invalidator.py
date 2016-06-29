@@ -53,7 +53,7 @@ class TestCloudFeedClient(testtools.TestCase):
         self.config(self.config_files())
         self.config_overrides()
         m.post(requests_mock.ANY, status_code=200,
-               json={"access": {"token": {"id": "id"}}})
+               json={'access': {'token': {'id': 'id'}}})
         self.ci = cache_invalidator.CloudFeedClient(self.example_url)
         filename = os.path.join(FIXTURES_DIR, 'rackspace_feed_response.json')
         with open(filename) as f:
@@ -77,7 +77,7 @@ class TestCloudFeedClient(testtools.TestCase):
                         {'content': json.dumps(self.feed_response_body),
                          'status_code': 200}])
         m.register_uri('POST', self.tokens_url, status_code=200,
-                       json={"access": {"token": {"id": "id"}}})
+                       json={'access': {'token': {'id': 'id'}}})
         self.assertEqual(len(self.ci.entries), 3)
 
     @requests_mock.mock()
@@ -89,5 +89,5 @@ class TestCloudFeedClient(testtools.TestCase):
 
         m.get(self.example_url, status_code=401)
         m.post(self.tokens_url, status_code=200,
-               json={"access": {"token": {"id": "id"}}})
+               json={'access': {'token': {'id': 'id'}}})
         self.assertRaises(RuntimeError, _get_entries)

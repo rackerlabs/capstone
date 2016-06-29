@@ -248,10 +248,10 @@ class RackspaceIdentity(object):
             '/tokens',
             headers=headers,
             data={
-                "auth": {
-                    "passwordCredentials": {
-                        "username": self._username,
-                        "password": self._password,
+                'auth': {
+                    'passwordCredentials': {
+                        'username': self._username,
+                        'password': self._password,
                     },
                 },
             },
@@ -331,11 +331,11 @@ class RackspaceIdentityToken(RackspaceIdentity):
             '/tokens',
             headers=headers,
             data={
-                "auth": {
-                    "token": {
-                        "id": self._token_id,
+                'auth': {
+                    'token': {
+                        'id': self._token_id,
                     },
-                    "tenantId": self._scope_project_id,
+                    'tenantId': self._scope_project_id,
                 },
             },
             expected_status=requests.codes.ok

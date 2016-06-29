@@ -34,17 +34,17 @@ class TestV2Outages(testtools.TestCase):
 
     def _get_token_data(self):
         return json.dumps({
-            "access": {
-                "token": {
-                    "id": self.token,
+            'access': {
+                'token': {
+                    'id': self.token,
                 },
-                "user": {
-                    "name": self.username,
-                    "id": self.user_id,
-                    "RAX-AUTH:domainId": self.domain_id,
-                    "roles": [
+                'user': {
+                    'name': self.username,
+                    'id': self.user_id,
+                    'RAX-AUTH:domainId': self.domain_id,
+                    'roles': [
                         {
-                            "id": "id",
+                            'id': 'id',
                         },
                     ],
                 },
@@ -53,10 +53,10 @@ class TestV2Outages(testtools.TestCase):
 
     def _get_user(self):
         return json.dumps({
-            "user": {
-                "id": self.user_id,
-                "username": self.username,
-                "RAX-AUTH:domainId": self.domain_id
+            'user': {
+                'id': self.user_id,
+                'username': self.username,
+                'RAX-AUTH:domainId': self.domain_id
             }
         })
 
