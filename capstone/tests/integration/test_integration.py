@@ -19,9 +19,8 @@ from oslo_utils import timeutils
 import requests
 import testtools
 
+from capstone import const
 from capstone.tests.integration import schema
-
-TIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 
 class BaseIntegrationTests(testtools.TestCase):
@@ -69,7 +68,7 @@ class BaseIntegrationTests(testtools.TestCase):
 
     def assertValidISO8601ExtendedFormatDatetime(self, dt):
         try:
-            return timeutils.parse_strtime(dt, fmt=TIME_FORMAT)
+            return timeutils.parse_strtime(dt, fmt=const.TIME_FORMAT)
         except Exception:
             msg = '%s is not a valid ISO 8601 extended format date time.' % dt
             raise AssertionError(msg)
