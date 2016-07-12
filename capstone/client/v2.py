@@ -334,28 +334,33 @@ class RackspaceIdentity(object):
 
 class RackspaceIdentityToken(RackspaceIdentity):
 
-    def __init__(self, token_id, scope_project_id, user_ref,
+    def __init__(self, token_id, user_ref,
+                 scope_project_id=None, scope_project_name=None,
+                 scope_project_domain_id=None, scope_project_domain_name=None,
                  x_forwarded_for=None):
-        super(RackspaceIdentityToken, self).__init__(token_id,
-                                                     scope_project_id,
-                                                     user_ref,
-                                                     x_forwarded_for=None)
+        super(RackspaceIdentityToken, self).__init__(
+            None, None, user_ref,
+            scope_project_id=scope_project_id,
+            scope_project_name=scope_project_name,
+            scope_project_domain_id=scope_project_domain_id,
+            scope_project_domain_name=scope_project_domain_name,
+            x_forwarded_for=x_forwarded_for)
         self._token_id = token_id
-        self._scope_project_id = scope_project_id
-        self._user_ref = user_ref
-        self._x_forwarded_for = x_forwarded_for
-        self._token_data = None
 
     @classmethod
-    def from_token(cls, token_id, scope_project_id,
-                   user_ref=None, x_forwarded_for=None):
+    def from_token(cls, token_id, scope_project_id=None,
+                   scope_project_name=None, scope_project_domain_id=None,
+                   scope_project_domain_name=None, x_forwarded_for=None):
         admin_client = RackspaceIdentityAdmin.from_config()
         admin_client.authenticate()
         token_data = admin_client.validate_token(token_id)
         user_id = token_data['access']['user']['id']
         user_ref = admin_client.get_user(user_id)
-        return cls(token_id, scope_project_id,
-                   user_ref=user_ref,
+        return cls(token_id, user_ref,
+                   scope_project_id=scope_project_id,
+                   scope_project_name=scope_project_name,
+                   scope_project_domain_id=scope_project_domain_id,
+                   scope_project_domain_name=scope_project_domain_name,
                    x_forwarded_for=x_forwarded_for)
 
     def _token_authenticate(self):
@@ -369,6 +374,7 @@ class RackspaceIdentityToken(RackspaceIdentity):
             headers['X-Forwarded-For'] = self._x_forwarded_for
 
         LOG.info(_LI('Token authentication against v2.'))
+        scope_project = self._scope_project_id or self._scope_project_name
         token_data = self.POST(
             '/tokens',
             headers=headers,
@@ -377,7 +383,7 @@ class RackspaceIdentityToken(RackspaceIdentity):
                     'token': {
                         'id': self._token_id,
                     },
-                    'tenantId': self._scope_project_id,
+                    'tenantId': scope_project,
                 },
             },
             expected_status=requests.codes.ok
